@@ -29,15 +29,6 @@ jobs:
       if: startsWith(matrix.os, 'macos')
       run: |
         brew install ta-lib
-    - name: Set Lockfile py 35
-      if: matrix.python-version == 3.5
-      run: |
-        echo "PIP_CONSTRAINT=etc/requirements_locked.txt" >> $GITHUB_ENV
-    - name: Set Lockfile py36
-      if: matrix.python-version == 3.6
-      run: |
-        echo "PIP_CONSTRAINT=etc/requirements_py36_locked.txt" >> $GITHUB_ENV
-
     - name: Get pip cache dir
       id: pip-cache
       run: |
