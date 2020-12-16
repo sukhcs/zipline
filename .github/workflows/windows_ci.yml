@@ -46,7 +46,6 @@ jobs:
       run: |
         conda activate test
         pip install --no-binary=bcolz -e .[dev]
-
     - name: Run tests
       run: |
         conda activate test

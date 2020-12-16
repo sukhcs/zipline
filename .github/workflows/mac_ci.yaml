@@ -50,9 +50,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-py${{matrix.python-version}}-
     - name: Install requirements
-        run: |
-          conda activate test
-          pip install --no-binary=bcolz -e .[dev]
+      run: |
+        conda activate test
+        pip install --no-binary=bcolz -e .[dev]
     - name: Run tests
       run: |
         nosetests tests
