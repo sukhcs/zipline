@@ -1,5 +1,4 @@
 import collections
-
 import alpaca_trade_api as tradeapi
 from datetime import datetime, timedelta, time as dtime
 import numpy as np
@@ -14,7 +13,10 @@ from dateutil import tz
 from trading_calendars import TradingCalendar
 import yaml
 from zipline.data.bundles import core as bundles
+from zipline.data.bundles.universe import Universe, all_alpaca_assets, get_sp500, get_sp100, get_nasdaq100
 from dateutil.parser import parse as date_parse
+
+
 user_home = str(Path.home())
 custom_data_path = join(user_home, '.zipline/custom_data')
 
@@ -35,10 +37,23 @@ def initialize_client():
 
 ASSETS = None
 def list_assets():
+    with open("alpaca.yaml", mode='r') as f:
+        o = yaml.safe_load(f)
+        try:
+            universe = Universe[o["universe"]]
+        except:
+            universe = Universe.ALL
     global ASSETS
     if not ASSETS:
-        ASSETS = [_.symbol for _ in CLIENT.list_assets()]
-        # ASSETS = [_.ticker for _ in CLIENT.polygon.all_tickers()]
+        if universe == Universe.ALL:
+            ASSETS = all_alpaca_assets(CLIENT)
+        elif universe == Universe.SP100:
+            ASSETS = get_sp100()
+        elif universe == Universe.SP500:
+            ASSETS = get_sp500()
+        elif universe == Universe.NASDAQ100:
+            ASSETS = get_nasdaq100()
+
 
     return list(set(ASSETS))
     # return ['AAPL', 'AA', 'TSLA', 'GOOG', 'MSFT']
