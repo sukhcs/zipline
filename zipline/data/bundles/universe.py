@@ -4,7 +4,7 @@ import pandas as pd
 
 class Universe(Enum):
     ALL = "ALL"
-    SP100 = "S&P 500"
+    SP100 = "S&P 100"
     SP500 = "S&P 500"
     NASDAQ100 = "NASDAQ 100"
 
