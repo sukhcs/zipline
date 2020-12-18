@@ -18,7 +18,7 @@ def get_sp500():
     df = table[0]
     df.columns = df.iloc[0]
     df = df.iloc[1:]
-    return df.Symbol
+    return df.Symbol.tolist()
 
 
 def get_sp100():
@@ -26,7 +26,7 @@ def get_sp100():
     df = table[2]
     df.columns = df.iloc[0]
     df = df.iloc[1:]
-    return df.Symbol
+    return df.Symbol.tolist()
 
 
 def get_nasdaq100():
@@ -34,7 +34,7 @@ def get_nasdaq100():
     df = table[3]
     df.columns = df.iloc[0]
     df = df.iloc[1:]
-    return df.Ticker
+    return df.Ticker.tolist()
 
 
 if __name__ == '__main__':
