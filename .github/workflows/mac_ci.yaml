@@ -46,7 +46,6 @@ jobs:
           ${{ runner.os }}-pip-py${{matrix.python-version}}-
     - name: Install scientific python requirements
       run: |
-#        export DISABLE_BCOLZ_AVX2=true
         echo ::set-env name=DISABLE_BCOLZ_AVX2::true
         conda install -c conda-forge pandas=0.22.0 numpy=1.18.4 scipy=1.4.1 cython=0.25.2 bcolz=0.12.1
     - name: Install requirements
