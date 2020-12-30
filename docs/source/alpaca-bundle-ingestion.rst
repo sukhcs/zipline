@@ -47,7 +47,7 @@ How To Use It
 
 * you need to define your ZIPLINE_ROOT in an environment variable (This is where the
   ingested data will be stored). You need this env variable in for every zipline related script you execute (that
-  includes the ingestion process, your notebooks research, and backtests you run) .It should be something like this:
+  includes the ingestion process, your research notebooks, and backtests you run) .It should be something like this:
 
   .. code-block:: yaml
 
