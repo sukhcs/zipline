@@ -74,6 +74,7 @@ How To Use It
 
   .. code-block:: bash
 
+    cd zipline_trader/
     python zipline/data/bundles/alpaca_api.py
 
   ..
