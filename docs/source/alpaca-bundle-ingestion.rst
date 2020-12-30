@@ -70,8 +70,6 @@ How To Use It
 
 * By default the bundle ingests 30 days backwards, but you can change that under the
   ``__main__`` section of ``zipline/data/bundles/alpaca_api.py``.
-| The ingestion process for daily data using Alpaca is extremely fast due to the Alpaca
-  API allowing to query 200 equities in one api call.
 * To ingest the bundle you need to run the ingestion script directly. Run this:
 
   .. code-block:: bash
@@ -79,6 +77,9 @@ How To Use It
     python zipline/data/bundles/alpaca_api.py
 
   ..
+| The ingestion process for daily data using Alpaca is extremely fast due to the Alpaca
+  API allowing to query 200 equities in one api call.
+
 
 Notes
 ))))))))
