@@ -30,7 +30,21 @@ How To Use It
     key_id: "<YOUR-KEY>"
     secret: "<YOUR-SECRET>"
     base_url: https://paper-api.alpaca.markets
+    universe: SP500
   ..
+* Selecting your universe - which means: what stocks should be included in the ingested DB. The smaller the universe,
+  the faster the ingestion is. Selecting the universe is completely up to you, but I do suggest to start small when
+  learning how to use the platform. Supported universes:
+
+  .. code-block:: python
+
+    class Universe(Enum):
+        ALL = "ALL"  # The entire ~8000 stocks supported by Alpaca
+        SP100 = "S&P 100"
+        SP500 = "S&P 500"
+        NASDAQ100 = "NASDAQ 100"
+  ..
+
 * you need to define your ZIPLINE_ROOT in an environment variable (This is where the
   ingested data will be stored). You need this env variable in for every zipline related script you execute (that
   includes the ingestion process, your notebooks research, and backtests you run) .It should be something like this:
