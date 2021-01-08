@@ -17,6 +17,7 @@ Working With The Research Environment
 -----------------------------------------
 | This was one of Quantopian's strengths and now you could run it locally too.
 | In the next few examples we will see how to:
+
 * Load your Alpaca (or any other) data bundle
 * How to get pricing data from the bundle
 * How to create and run a pipeline
@@ -41,6 +42,27 @@ Simple Pipeline
 .. _Simple Pipeline: notebooks/SimplePipeline.ipynb
 
 
+Factors and Alphalens
+--------------------------------
+| Factors could be used to filter and/or rank your pipeline output and help you choose the better
+| stocks to trade for your scenario. Quantopian created `Alphalens`_ to help you analyze the quality
+| of your factors.
+| This package is not maintained by quantopian anymore, so I recommend installing from my fork (I had to fix some stuff
+  to make it work properly). Do this:
+
+ .. code-block:: sh
+
+    pip install git+https://github.com/shlomikushchi/alphalens#egg=alphalens
+
+Sector Classifier
+)))))))))))))))))))))
+| I added a builtin Sector classifier called ``ZiplineTraderSector``. It is based on the work in https://github.com/pbharrin/alpha-compiler.
+| It allows you to work in specific sectors inside your universe. e.g: analyze how tech stocks respond to a certain factor.
+| In the following example we can see how to use it on some factors we create. `Alphalens Example`_.
+
+.. _Alphalens Example: notebooks/Alphalens.ipynb
+
+
 Run and analyze a backtest
 --------------------------
 | Running a backtest is the way to test your ideas. You could do it inside a notebook
@@ -52,3 +74,4 @@ Run and analyze a backtest
 
 
 .. _`pyfolio` : https://github.com/quantopian/pyfolio
+.. _`Alphalens` : https://github.com/quantopian/alphalens
