@@ -49,3 +49,6 @@ jobs:
     - name: Install requirements
       run: |
         pip install -e .[dev]
+    - name: Print Installed Packages
+      run: |
+        pip freeze
