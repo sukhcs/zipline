@@ -32,6 +32,7 @@ How To Use It
     base_url: https://paper-api.alpaca.markets
     universe: SP500
   ..
+
 * Selecting your universe - which means: what stocks should be included in the ingested DB. The smaller the universe,
   the faster the ingestion is. Selecting the universe is completely up to you, but I do suggest to start small when
   learning how to use the platform. Supported universes:
@@ -44,6 +45,22 @@ How To Use It
         SP500 = "S&P 500"
         NASDAQ100 = "NASDAQ 100"
   ..
+
+* Alternatively you could specify a custom asset list inside the ``alpaca.yaml`` file if, for instance you want to ingest a small number of assets.
+  You do this
+
+  .. code-block:: yaml
+
+    key_id: "<YOUR-KEY>"
+    secret: "<YOUR-SECRET>"
+    base_url: https://paper-api.alpaca.markets
+    custom_asset_list: AAPL, TSLA, GOOG
+  ..
+
+  Please note that:
+  * The assets must be all caps
+  * separated by comma
+  * if ``custom_asset_list`` is specified then ``universe`` is ignored if present.
 
 * you need to define your ZIPLINE_ROOT in an environment variable (This is where the
   ingested data will be stored). You need this env variable in for every zipline related script you execute (that
