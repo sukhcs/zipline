@@ -58,8 +58,9 @@ How To Use It
   ..
 
   Please note that:
+
   * The assets must be all caps
-  * separated by comma
+  * separated by commas
   * if ``custom_asset_list`` is specified then ``universe`` is ignored if present.
 
 * you need to define your ZIPLINE_ROOT in an environment variable (This is where the
