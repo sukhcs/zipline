@@ -357,4 +357,4 @@ if __name__ == '__main__':
         show_progress=True,
     )
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+    print(f"--- It took {timedelta(seconds=time.time() - start_time)} ---")
