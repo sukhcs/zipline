@@ -37,25 +37,25 @@ def initialize_client():
 
 ASSETS = None
 def list_assets():
-    with open("alpaca.yaml", mode='r') as f:
-        o = yaml.safe_load(f)
-        try:
-            universe = Universe[o["universe"]]
-        except:
-            universe = Universe.ALL
     global ASSETS
     if not ASSETS:
-        if universe == Universe.ALL:
-            ASSETS = all_alpaca_assets(CLIENT)
-        elif universe == Universe.SP100:
-            ASSETS = get_sp100()
-        elif universe == Universe.SP500:
-            ASSETS = get_sp500()
-        elif universe == Universe.NASDAQ100:
-            ASSETS = get_nasdaq100()
-
-
-    return list(set(ASSETS))
+        with open("alpaca.yaml", mode='r') as f:
+            o = yaml.safe_load(f)
+            try:
+                universe = Universe[o["universe"]]
+            except:
+                universe = Universe.ALL
+        if not ASSETS:
+            if universe == Universe.ALL:
+                ASSETS = all_alpaca_assets(CLIENT)
+            elif universe == Universe.SP100:
+                ASSETS = get_sp100()
+            elif universe == Universe.SP500:
+                ASSETS = get_sp500()
+            elif universe == Universe.NASDAQ100:
+                ASSETS = get_nasdaq100()
+        ASSETS = list(set(ASSETS))
+    return ASSETS
     # return ['AAPL', 'AA', 'TSLA', 'GOOG', 'MSFT']
 
 
