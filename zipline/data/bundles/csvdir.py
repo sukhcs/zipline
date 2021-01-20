@@ -10,6 +10,10 @@ from pandas import DataFrame, read_csv, Index, Timedelta, NaT
 from trading_calendars import register_calendar_alias
 
 from zipline.utils.cli import maybe_show_progress
+from zipline.errors import SymbolNotFound, SidsNotFound
+
+from datetime import date
+import pandas as pd
 
 from . import core as bundles
 
@@ -151,8 +155,10 @@ def csvdir_bundle(environ,
         else:
             writer = daily_bar_writer
 
+        assets_to_sids = asset_to_sid_map(asset_db_writer.asset_finder, symbols)
+
         writer.write(_pricing_iter(ddir, symbols, metadata,
-                     divs_splits, show_progress),
+                     divs_splits, show_progress, assets_to_sids = assets_to_sids),
                      show_progress=show_progress)
 
         # Hardcode the exchange to "CSVDIR" for all assets and (elsewhere)
@@ -167,12 +173,32 @@ def csvdir_bundle(environ,
         adjustment_writer.write(splits=divs_splits['splits'],
                                 dividends=divs_splits['divs'])
 
+def asset_to_sid_map(asset_finder, symbols):
+    assets_to_sids = {}
 
-def _pricing_iter(csvdir, symbols, metadata, divs_splits, show_progress):
+    if asset_finder:
+        next_free_sid = asset_finder.get_max_sid() + 1
+        for symbol in symbols:
+            try:
+                asset = asset_finder.lookup_symbol(symbol, pd.Timestamp(date.today(), tz='UTC'))
+                assets_to_sids[symbol] = int(asset)
+            except (SymbolNotFound, SidsNotFound) as e:
+                assets_to_sids[symbol] = next_free_sid
+                next_free_sid = next_free_sid + 1
+
+        return assets_to_sids
+
+    for i in range(len(symbols)):
+        assets_to_sids[symbols[i]] = i
+
+    return assets_to_sids
+
+def _pricing_iter(csvdir, symbols, metadata, divs_splits, show_progress, assets_to_sids={}):
     with maybe_show_progress(symbols, show_progress,
                              label='Loading custom pricing data: ') as it:
         files = os.listdir(csvdir)
-        for sid, symbol in enumerate(it):
+        for symbol in it:
+            sid = assets_to_sids[symbol]
             logger.debug('%s: sid %s' % (symbol, sid))
 
             try:
@@ -189,9 +215,11 @@ def _pricing_iter(csvdir, symbols, metadata, divs_splits, show_progress):
             start_date = dfr.index[0]
             end_date = dfr.index[-1]
 
+            #print(dfr)
+            #exit()
             # The auto_close date is the day after the last trade.
             ac_date = end_date + Timedelta(days=1)
-            metadata.iloc[sid] = start_date, end_date, ac_date, symbol
+            metadata.loc[sid] = start_date, end_date, ac_date, symbol
 
             if 'split' in dfr.columns:
                 tmp = 1. / dfr[dfr['split'] != 1.0]['split']

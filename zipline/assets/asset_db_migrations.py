@@ -7,7 +7,7 @@ from zipline.assets.asset_writer import write_version_info
 from zipline.utils.compat import wraps
 from zipline.errors import AssetDBImpossibleDowngrade
 from zipline.utils.preprocess import preprocess
-from zipline.utils.sqlite_utils import coerce_string_to_eng
+from zipline.utils.db_utils import coerce_string_to_eng
 
 
 def alter_columns(op, name, *columns, **kwargs):
