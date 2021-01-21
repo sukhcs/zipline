@@ -75,3 +75,8 @@ bcolz==1.2.1
 h5py==2.10.0
 html5lib==1.1
 beautifulsoup4==4.9.3
+# psql-backend
+psycopg2==2.8.6
+# alpha-vantage-bundle
+alpha_vantage==2.3.1
+ratelimit==2.2.1

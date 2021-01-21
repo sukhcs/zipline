@@ -2,6 +2,11 @@ from collections import namedtuple
 from errno import ENOENT
 from os import remove
 
+import sqlalchemy as sa
+from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy.exc import IntegrityError
+from toolz import first
+
 from logbook import Logger
 import numpy as np
 from numpy import integer as any_integer
@@ -20,7 +25,7 @@ from zipline.utils.numpy_utils import (
     uint64_dtype,
 )
 from zipline.utils.pandas_utils import empty_dataframe
-from zipline.utils.sqlite_utils import group_into_chunks, coerce_string_to_conn
+from zipline.utils.db_utils import group_into_chunks, coerce_string_to_conn
 from ._adjustments import load_adjustments_from_sqlite
 
 log = Logger(__name__)
@@ -28,16 +33,26 @@ log = Logger(__name__)
 
 SQLITE_ADJUSTMENT_TABLENAMES = frozenset(['splits', 'dividends', 'mergers'])
 
+UNPAID_ALL_QUERY_TEMPLATE = """
+SELECT sid, amount, pay_date, ex_date from dividend_payouts
+WHERE sid IN ({0})
+"""
+
 UNPAID_QUERY_TEMPLATE = """
 SELECT sid, amount, pay_date from dividend_payouts
-WHERE ex_date=? AND sid IN ({0})
+WHERE ex_date={0} AND sid IN ({1})
 """
 
 Dividend = namedtuple('Dividend', ['asset', 'amount', 'pay_date'])
 
+UNPAID_ALL_STOCK_DIVIDEND_QUERY_TEMPLATE = """
+SELECT sid, payment_sid, ratio, pay_date, ex_date from stock_dividend_payouts
+WHERE sid IN ({0})
+"""
+
 UNPAID_STOCK_DIVIDEND_QUERY_TEMPLATE = """
 SELECT sid, payment_sid, ratio, pay_date from stock_dividend_payouts
-WHERE ex_date=? AND sid IN ({0})
+WHERE ex_date={0} AND sid IN ({1})
 """
 
 StockDividend = namedtuple(
@@ -129,6 +144,8 @@ class SQLiteAdjustmentReader(object):
     @preprocess(conn=coerce_string_to_conn(require_exists=True))
     def __init__(self, conn):
         self.conn = conn
+        self._dividend_cache = {}
+        self._stock_dividend_cache = {}
 
     def __enter__(self):
         return self
@@ -209,9 +226,9 @@ class SQLiteAdjustmentReader(object):
     def get_adjustments_for_sid(self, table_name, sid):
         t = (sid,)
         c = self.conn.cursor()
-        adjustments_for_sid = c.execute(
-            "SELECT effective_date, ratio FROM %s WHERE sid = ?" %
-            table_name, t).fetchall()
+        c.execute(f'SELECT effective_date, ratio FROM {table_name} WHERE sid = {sid}')
+
+        adjustments_for_sid = c.fetchall()
         c.close()
 
         return [[Timestamp(adjustment[0], unit='s', tz='UTC'), adjustment[1]]
@@ -219,49 +236,55 @@ class SQLiteAdjustmentReader(object):
                 adjustments_for_sid]
 
     def get_dividends_with_ex_date(self, assets, date, asset_finder):
-        seconds = date.value / int(1e9)
-        c = self.conn.cursor()
-
         divs = []
-        for chunk in group_into_chunks(assets):
-            query = UNPAID_QUERY_TEMPLATE.format(
-                ",".join(['?' for _ in chunk]))
-            t = (seconds,) + tuple(map(lambda x: int(x), chunk))
+        seconds = date.value / int(1e9)
 
-            c.execute(query, t)
+        for asset in assets:
+            sid = int(asset)
+            if not sid in self._dividend_cache:
+                c = self.conn.cursor()
+                self._dividend_cache[sid] = pd.read_sql(
+                                  UNPAID_ALL_QUERY_TEMPLATE.format(sid),
+                                  self.conn,
+                                  index_col='ex_date')
 
-            rows = c.fetchall()
-            for row in rows:
+            try:
+                cached_div = self._dividend_cache[sid].loc[seconds]
                 div = Dividend(
-                    asset_finder.retrieve_asset(row[0]),
-                    row[1], Timestamp(row[2], unit='s', tz='UTC'))
+                    asset,
+                    cached_div['amount'],
+                    Timestamp(cached_div['pay_date'], unit='s', tz='UTC'))
                 divs.append(div)
-        c.close()
+
+            except KeyError:
+                pass
 
         return divs
 
     def get_stock_dividends_with_ex_date(self, assets, date, asset_finder):
-        seconds = date.value / int(1e9)
-        c = self.conn.cursor()
-
         stock_divs = []
-        for chunk in group_into_chunks(assets):
-            query = UNPAID_STOCK_DIVIDEND_QUERY_TEMPLATE.format(
-                ",".join(['?' for _ in chunk]))
-            t = (seconds,) + tuple(map(lambda x: int(x), chunk))
+        seconds = date.value / int(1e9)
 
-            c.execute(query, t)
+        for asset in assets:
+            sid = int(asset)
+            if not sid in self._stock_dividend_cache:
+                c = self.conn.cursor()
+                self._stock_dividend_cache[sid] = pd.read_sql(
+                                  UNPAID_ALL_STOCK_DIVIDEND_QUERY_TEMPLATE.format(sid),
+                                  self.conn,
+                                  index_col='ex_date')
 
-            rows = c.fetchall()
+            try:
+                cached_stock_div = self._stock_dividend_cache[sid].loc[seconds]
+                div = StockDividend(
+                    asset,
+                    asset_finder.retrieve_asset(cached_stock_div['payment_sid']),
+                    cached_stock_div['ratio'],
+                    Timestamp(cached_stock_div['pay_date'], unit='s', tz='UTC'))
+                stock_divs.append(div)
 
-            for row in rows:
-                stock_div = StockDividend(
-                    asset_finder.retrieve_asset(row[0]),    # asset
-                    asset_finder.retrieve_asset(row[1]),    # payment_asset
-                    row[2],
-                    Timestamp(row[3], unit='s', tz='UTC'))
-                stock_divs.append(stock_div)
-        c.close()
+            except KeyError:
+                pass
 
         return stock_divs
 
@@ -357,6 +380,8 @@ class SQLiteAdjustmentWriter(object):
     def __init__(self, conn_or_path, equity_daily_bar_reader, overwrite=False):
         if isinstance(conn_or_path, sqlite3.Connection):
             self.conn = conn_or_path
+            self.engine = False
+
         elif isinstance(conn_or_path, six.string_types):
             if overwrite:
                 try:
@@ -364,7 +389,17 @@ class SQLiteAdjustmentWriter(object):
                 except OSError as e:
                     if e.errno != ENOENT:
                         raise
-            self.conn = sqlite3.connect(conn_or_path)
+
+            # switch to regex if we want to support other engines
+            if conn_or_path.startswith('postgresql://'):
+                self.engine = sa.create_engine(conn_or_path)
+                self.conn = self.engine.connect()
+                # not needed for sqlite
+                self._tables = self.ensure_tables()
+            else:
+                self.engine = False
+                self.conn = sqlite3.connect(conn_or_path)
+
             self.uri = conn_or_path
         else:
             raise TypeError("Unknown connection type %s" % type(conn_or_path))
@@ -410,12 +445,51 @@ class SQLiteAdjustmentWriter(object):
                         ),
                     )
 
-        frame.to_sql(
-            tablename,
-            self.conn,
-            if_exists='append',
-            chunksize=50000,
-        )
+        # in case of sqlite, use naive way of writing
+        if not self.engine:
+            frame.to_sql(
+                tablename,
+                self.conn,
+                if_exists='append',
+                chunksize=50000,
+            )
+        else:
+            frame.reset_index(inplace=True)
+            frame.drop(columns='index', inplace=True)
+            table = self._tables[tablename]
+            constr_table = table
+            # sqlite needs a table-string, postgres needs a table-object
+            if 'sqlite:///' in str(self.engine):
+                constr_table = str(table)
+
+            insp = Inspector.from_engine(self.engine)
+            constrs = insp.get_unique_constraints(constr_table)
+            uq_cols = set()
+
+            for constr in constrs:
+                for col in constr['column_names']:
+                    uq_cols.add(col)
+
+            for i, row in frame.iterrows():
+                values = {}
+                for column in list(frame.columns):
+                    values[column] = row[column]
+
+                try:
+                    ins = table.insert().values(values)
+                    self.engine.execute(ins)
+                except IntegrityError:
+                    uq_col_objs = [col for col in table.columns if col.name in uq_cols]
+
+                    where_cond = False
+                    for col_obj in uq_col_objs:
+                        if where_cond == False:
+                            where_cond = col_obj == values[col_obj.name]
+                        else:
+                            where_cond = sa.and_(where_cond, col_obj == values[col_obj.name])
+
+                    upd = table.update().where(where_cond).values(values)
+                    self.engine.execute(upd)
 
     def write_frame(self, tablename, frame):
         if tablename not in SQLITE_ADJUSTMENT_TABLENAMES:
@@ -579,6 +653,71 @@ class SQLiteAdjustmentWriter(object):
         # Second from the dividend payouts, calculate ratios.
         dividend_ratios = self.calc_dividend_ratios(dividends)
         self.write_frame('dividends', dividend_ratios)
+
+    def ensure_tables(self):
+        metadata = sa.MetaData()
+        tables = {}
+
+        tables['dividend_payouts'] = sa.Table(
+            'dividend_payouts',
+            metadata,
+            sa.Column('id', sa.BigInteger(), unique=True, nullable=False, primary_key=True, autoincrement=True),
+            sa.Column('sid', sa.BigInteger() ),
+            sa.Column('ex_date', sa.BigInteger() ),
+            sa.Column('declared_date', sa.BigInteger() ),
+            sa.Column('record_date', sa.BigInteger() ),
+            sa.Column('pay_date', sa.BigInteger() ),
+            sa.Column('amount', sa.Float() ),
+            sa.UniqueConstraint('sid', 'ex_date', name='div_payouts_uq')
+        )
+
+        tables['stock_dividend_payouts'] = sa.Table(
+            'stock_dividend_payouts',
+            metadata,
+            sa.Column('index', sa.BigInteger(), unique=True, nullable=False, primary_key=True, autoincrement=True),
+            sa.Column('sid', sa.BigInteger() ),
+            sa.Column('ex_date', sa.BigInteger() ),
+            sa.Column('declared_date', sa.BigInteger() ),
+            sa.Column('record_date', sa.BigInteger() ),
+            sa.Column('pay_date', sa.BigInteger() ),
+            sa.Column('payment_sid', sa.BigInteger() ),
+            sa.Column('ratio', sa.Float() ),
+            sa.UniqueConstraint('sid', 'ex_date', name='stk_div_payouts_uq')
+        )
+
+        tables['dividends'] = sa.Table(
+            'dividends',
+            metadata,
+            sa.Column('index', sa.BigInteger(), unique=True, nullable=False, primary_key=True, autoincrement=True),
+            sa.Column('sid', sa.BigInteger() ),
+            sa.Column('effective_date', sa.BigInteger() ),
+            sa.Column('ratio', sa.Float() ),
+            sa.UniqueConstraint('sid', 'effective_date', name='div_uq')
+        )
+
+        tables['mergers'] = sa.Table(
+            'mergers',
+            metadata,
+            sa.Column('index', sa.BigInteger(), unique=True, nullable=False, primary_key=True, autoincrement=True),
+            sa.Column('sid', sa.BigInteger() ),
+            sa.Column('effective_date', sa.BigInteger() ),
+            sa.Column('ratio', sa.Float() ),
+            sa.UniqueConstraint('sid', 'effective_date', name='mergers_uq')
+        )
+
+        tables['splits'] = sa.Table(
+            'splits',
+            metadata,
+            sa.Column('index', sa.BigInteger(), unique=True, primary_key=True, autoincrement=True),
+            sa.Column('sid', sa.BigInteger() ),
+            sa.Column('effective_date', sa.BigInteger() ),
+            sa.Column('ratio', sa.Float() ),
+            sa.UniqueConstraint('sid', 'effective_date', name='splits_uq')
+        )
+
+        metadata.create_all(self.engine)
+
+        return tables
 
     def write(self,
               splits=None,

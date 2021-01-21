@@ -15,6 +15,8 @@ import yaml
 from zipline.data.bundles import core as bundles
 from zipline.data.bundles.universe import Universe, all_alpaca_assets, get_sp500, get_sp100, get_nasdaq100
 from dateutil.parser import parse as date_parse
+from zipline.errors import SymbolNotFound, SidsNotFound
+from datetime import date
 
 
 user_home = str(Path.home())
@@ -60,8 +62,25 @@ def list_assets():
                     ASSETS = get_nasdaq100()
                 ASSETS = list(set(ASSETS))
     return ASSETS
-    # return ['AAPL', 'AA', 'TSLA', 'GOOG', 'MSFT']
 
+def asset_to_sid_map(asset_finder, symbols):
+    assets_to_sids = {}
+
+    if asset_finder:
+        next_free_sid = asset_finder.get_max_sid() + 1
+        for symbol in symbols:
+            try:
+                asset = asset_finder.lookup_symbol(symbol, pd.Timestamp(date.today(), tz='UTC'))
+                assets_to_sids[symbol] = int(asset)
+            except (SymbolNotFound, SidsNotFound) as e:
+                assets_to_sids[symbol] = next_free_sid
+                next_free_sid = next_free_sid + 1
+
+        return assets_to_sids
+
+    for i in range(len(symbols)):
+        assets_to_sids[symbols[i]] = i
+    return assets_to_sids
 
 def iso_date(date_str):
     """
@@ -228,7 +247,7 @@ def get_aggs_from_alpaca(symbols,
     return processed
 
 MAX_PER_REQUEST_AMOUNT = 200  # Alpaca max symbols per 1 http request
-def df_generator(interval, start, end):
+def df_generator(interval, start, end, assets_to_sids):
     exchange = 'NYSE'
     asset_list = list_assets()
     base_sid = 0
@@ -238,8 +257,9 @@ def df_generator(interval, start, end):
     for i in range(len(asset_list[::MAX_PER_REQUEST_AMOUNT])):
         partial = asset_list[MAX_PER_REQUEST_AMOUNT*i:MAX_PER_REQUEST_AMOUNT*(i+1)]
         df: pd.DataFrame = get_aggs_from_alpaca(partial, start, end, 'day' if interval == '1d' else 'minute', 1)
-        for sid, symbol in enumerate(df.columns.levels[0]):
+        for _, symbol in enumerate(df.columns.levels[0]):
             try:
+                sid = assets_to_sids[symbol]
                 # doing this makes sure not all data in df is null
                 # isnull returns 0 and 1 matrix.
                 # doing sum twice, makes sure there isn't even one NaN value
@@ -249,14 +269,13 @@ def df_generator(interval, start, end):
                     if symbol not in already_ingested:
                         first_traded = start
                         auto_close_date = end + pd.Timedelta(days=1)
-                        yield (sid + base_sid, df[symbol].sort_index()), symbol, start, end, first_traded, auto_close_date, exchange
+                        yield (sid, df[symbol].sort_index()), symbol, start, end, first_traded, auto_close_date, exchange
                         already_ingested[symbol] = True
 
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 print(f"error while processig {(sid + base_sid, symbol)}: {e}")
-        base_sid += MAX_PER_REQUEST_AMOUNT
 
 
 def metadata_df():
@@ -289,23 +308,26 @@ def api_to_bundle(interval=['1m']):
                output_dir
                ):
 
+        assets_to_sids = asset_to_sid_map(asset_db_writer.asset_finder, list_assets())
 
         def minute_data_generator():
             return (sid_df for (sid_df, *metadata.iloc[sid_df[0]]) in df_generator(interval='1m',
                                                                                    start=start_session,
-                                                                                   end=end_session))
+                                                                                   end=end_session,
+                                                                                   assets_to_sids=assets_to_sids))
 
         def daily_data_generator():
             return (sid_df for (sid_df, *metadata.iloc[sid_df[0]]) in df_generator(interval='1d',
                                                                                    start=start_session,
-                                                                                   end=end_session))
+                                                                                   end=end_session,
+                                                                                   assets_to_sids=assets_to_sids))
         for _interval in interval:
             metadata = metadata_df()
             if _interval == '1d':
-                daily_bar_writer.write(daily_data_generator(), show_progress=True)
+                daily_bar_writer.write(daily_data_generator(), assets=assets_to_sids.values(), show_progress=True)
             elif _interval == '1m':
                 minute_bar_writer.write(
-                    minute_data_generator(), show_progress=True)
+                    minute_data_generator(), assets=assets_to_sids.values(), show_progress=True)
 
             # Drop the ticker rows which have missing sessions in their data sets
             metadata.dropna(inplace=True)
@@ -333,7 +355,7 @@ if __name__ == '__main__':
     # while not cal.is_session(start_date):
     #     start_date += timedelta(days=1)
 
-    start_date = end_date - timedelta(days=30)
+    start_date = end_date - timedelta(days=4000)
     while not cal.is_session(start_date):
         start_date -= timedelta(days=1)
 
