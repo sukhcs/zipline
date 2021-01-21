@@ -39,25 +39,29 @@ def initialize_client():
 
 ASSETS = None
 def list_assets():
-    with open("alpaca.yaml", mode='r') as f:
-        o = yaml.safe_load(f)
-        try:
-            universe = Universe[o["universe"]]
-        except:
-            universe = Universe.ALL
     global ASSETS
     if not ASSETS:
-        if universe == Universe.ALL:
-            ASSETS = all_alpaca_assets(CLIENT)
-        elif universe == Universe.SP100:
-            ASSETS = get_sp100()
-        elif universe == Universe.SP500:
-            ASSETS = get_sp500()
-        elif universe == Universe.NASDAQ100:
-            ASSETS = get_nasdaq100()
-
-    return list(set(ASSETS))
-    #return ['AAPL']
+        with open("alpaca.yaml", mode='r') as f:
+            o = yaml.safe_load(f)
+            custom_asset_list = o.get("custom_asset_list")
+            if custom_asset_list:
+                custom_asset_list = custom_asset_list.strip().replace(" ", "").split(",")
+                ASSETS = list(set(custom_asset_list))
+            else:
+                try:
+                    universe = Universe[o["universe"]]
+                except:
+                    universe = Universe.ALL
+                if universe == Universe.ALL:
+                    ASSETS = all_alpaca_assets(CLIENT)
+                elif universe == Universe.SP100:
+                    ASSETS = get_sp100()
+                elif universe == Universe.SP500:
+                    ASSETS = get_sp500()
+                elif universe == Universe.NASDAQ100:
+                    ASSETS = get_nasdaq100()
+                ASSETS = list(set(ASSETS))
+    return ASSETS
 
 def asset_to_sid_map(asset_finder, symbols):
     assets_to_sids = {}
@@ -76,7 +80,6 @@ def asset_to_sid_map(asset_finder, symbols):
 
     for i in range(len(symbols)):
         assets_to_sids[symbols[i]] = i
-
     return assets_to_sids
 
 def iso_date(date_str):
@@ -380,4 +383,4 @@ if __name__ == '__main__':
         show_progress=True,
     )
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+    print(f"--- It took {timedelta(seconds=time.time() - start_time)} ---")
