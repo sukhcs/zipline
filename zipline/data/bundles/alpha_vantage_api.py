@@ -1,28 +1,21 @@
-# Data-Bundle for Aplhavantage
-#
-# Usage: set api-key with 'export ALPHAVANTAGE_API_KEY=yourkey'
-#
-# Limitations: free-accounts can have 5 calls per minute and 500 calls a day.
-#   tolerance is used to wait some small additional time, otherwise sometimes
-#   we will still hit the limit if we want to squeeze out as much calls as
-#   possible.
-#   In case you have a premium-subscription, you can tune these values by
-#   setting the env-vars AV_FREQ_SEC, AV_CALLS_PER_FREQ, and AV_TOLERANCE_SEC
-#   AV_FREQ_SEC - sets the base-frequency
-#   AV_CALLS_PER_FREQ - sets the amount of calls per base-frequency
-#   AV_TOLERANCE_SEC - the amount of seconds to add to the interval in case
-#       we're getting exceptions because of calling api to often
-#
-# Adjustments: to enable a bigger precision on our backtests, i decided to
-#   go for unadjusted-prices and implemented an adjustment-writer to account
-#   for dividends and splits. However, only daily-data contains this information
-#   so it's really IMPORTANT that you never only request minute-data alone.
-#
-import collections
-import os
-
-import math
-import requests
+"""
+Data-Bundle for Aplhavantage
+Usage: set api-key with 'export ALPHAVANTAGE_API_KEY=yourkey'
+Limitations: free-accounts can have 5 calls per minute and 500 calls a day.
+  tolerance is used to wait some small additional time, otherwise sometimes
+  we will still hit the limit if we want to squeeze out as much calls as
+  possible.
+  In case you have a premium-subscription, you can tune these values by
+  setting the env-vars AV_FREQ_SEC, AV_CALLS_PER_FREQ, and AV_TOLERANCE_SEC
+  AV_FREQ_SEC - sets the base-frequency
+  AV_CALLS_PER_FREQ - sets the amount of calls per base-frequency
+  AV_TOLERANCE_SEC - the amount of seconds to add to the interval in case
+      we're getting exceptions because of calling api too often
+Adjustments: to enable a bigger precision on our backtests, i decided to
+  go for unadjusted-prices and implemented an adjustment-writer to account
+  for dividends and splits. However, only daily-data contains this information
+  so it's really IMPORTANT that you never only request minute-data alone.
+"""
 
 import numpy as np
 import pandas as pd
