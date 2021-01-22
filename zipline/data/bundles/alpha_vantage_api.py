@@ -45,9 +45,10 @@ AV_TOLERANCE_SEC = av_config.breathing_space
 
 ASSETS = None
 # uncomment this line if you want a static list of symbols
-#ASSETS = ['JNJ','TSLA','GOOGL']
+# ASSETS = ['JNJ','TSLA','GOOGL']
 UNIVERSE = Universe.NASDAQ100
-#UNIVERSE = Universe.SP500
+# UNIVERSE = Universe.SP500
+
 
 def list_assets():
     global ASSETS, UNIVERSE
@@ -63,6 +64,7 @@ def list_assets():
 
     return sorted(list(set(ASSETS)))
 
+
 def fill_daily_gaps(df):
     cal: TradingCalendar = trading_calendars.get_calendar('NYSE')
     sessions = cal.sessions_in_range(df.index[0], df.index[-1])
@@ -74,14 +76,14 @@ def fill_daily_gaps(df):
     df = df.append(pd.DataFrame(index=to_fill)).sort_index()
 
     # forward-fill these values regularly
-    cols = ['close', 'dividend', 'split'] # list of columns to update
+    cols = ['close', 'dividend', 'split']  # list of columns to update
     df[cols] = df[cols].fillna(method='ffill')
 
     # fill remaining fields except for volume with the previous close
     mask_fill = pd.isnull(df['open']) & pd.isnull(df['high']) & pd.isnull(df['low'])
-    df.loc[mask_fill,'open'] = df['close']
-    df.loc[mask_fill,'high'] = df['close']
-    df.loc[mask_fill,'low'] = df['close']
+    df.loc[mask_fill, 'open'] = df['close']
+    df.loc[mask_fill, 'high'] = df['close']
+    df.loc[mask_fill, 'low'] = df['close']
 
     # fill volume with zero
     df['volume'] = df['volume'].fillna(0)
@@ -90,6 +92,7 @@ def fill_daily_gaps(df):
     print(f'\nWarning! Filled {filled} empty values!')
 
     return df
+
 
 # purpose of this function is to encapsulate both minute- and daily-requests in one
 # function to be able to properly do rate-limiting.
@@ -107,26 +110,24 @@ def av_api_wrapper(symbol, interval, slice=None):
         data, meta_data = ts.get_daily_adjusted(symbol, outputsize='full')
         return data
 
-def av_get_data_for_symbol(symbol, start, end, interval):
 
+def av_get_data_for_symbol(symbol, start, end, interval):
     if interval == '1m':
         data = []
-
-        for i in range(1,3):
-            for j in range(1,13):
+        for i in range(1, 3):
+            for j in range(1, 13):
                 slice = 'year' + str(i) + 'month' + str(j)
-                #print('requesting slice ' + slice + ' for ' + symbol)
+                # print('requesting slice ' + slice + ' for ' + symbol)
                 data_slice = av_api_wrapper(symbol, interval=interval, slice=slice)
 
                 # dont know better way to convert _csv.reader to list or DataFrame
                 table = []
                 for line in data_slice:
-                  table.append(line)
+                    table.append(line)
 
                 # strip header-row from csv
                 table = table[1:]
                 data = data + table
-
 
         df = pd.DataFrame(data, columns=['date', 'open', 'high', 'low', 'close', 'volume'])
 
@@ -141,16 +142,16 @@ def av_get_data_for_symbol(symbol, start, end, interval):
         df.index = pd.to_datetime(df.index).tz_localize('UTC')
 
         df.rename(columns={
-          '1. open': 'open',
-          '2. high': 'high',
-          '3. low': 'low',
-          '4. close': 'close',
-          '5. volume': 'volume',
-          '5. adjusted close': 'adj_close',
-          '6. volume': 'volume',
-          '7. dividend amount': 'dividend',
-          '8. split coefficient': 'split'
-          }, inplace=True)
+            '1. open': 'open',
+            '2. high': 'high',
+            '3. low': 'low',
+            '4. close': 'close',
+            '5. volume': 'volume',
+            '5. adjusted close': 'adj_close',
+            '6. volume': 'volume',
+            '7. dividend amount': 'dividend',
+            '8. split coefficient': 'split'
+        }, inplace=True)
 
         # fill potential gaps in data
         df = fill_daily_gaps(df)
@@ -183,14 +184,15 @@ def av_get_data_for_symbol(symbol, start, end, interval):
 def calc_split(sid, df):
     tmp = 1. / df[df['split'] != 1.0]['split']
     split = pd.DataFrame(data=tmp.index.tolist(),
-                      columns=['effective_date'])
+                         columns=['effective_date'])
     split['ratio'] = tmp.tolist()
     split['sid'] = np.int(sid)
 
-    #split['effective_date'] = pd.to_datetime(split['effective_date'], utc=True)
+    # split['effective_date'] = pd.to_datetime(split['effective_date'], utc=True)
     split['effective_date'] = split['effective_date'].apply(lambda x: x.timestamp())
 
     return split
+
 
 # collect all dividends and the dates when they were issued,
 # fill stuff we don't know with empty-values
@@ -266,13 +268,13 @@ def metadata_df(assets_to_sids={}):
     sids = [sid for _, sid in assets_to_sids.items()]
 
     metadata_dtype = [
-          ('symbol', 'object'),
-          ('asset_name', 'object'),
-          ('start_date', 'datetime64[ns]'),
-          ('end_date', 'datetime64[ns]'),
-          ('first_traded', 'datetime64[ns]'),
-          ('auto_close_date', 'datetime64[ns]'),
-          ('exchange', 'object'), ]
+        ('symbol', 'object'),
+        ('asset_name', 'object'),
+        ('start_date', 'datetime64[ns]'),
+        ('end_date', 'datetime64[ns]'),
+        ('first_traded', 'datetime64[ns]'),
+        ('auto_close_date', 'datetime64[ns]'),
+        ('exchange', 'object'), ]
 
     metadata_df = pd.DataFrame(
         np.empty(len(list_assets()), dtype=metadata_dtype))
@@ -280,6 +282,7 @@ def metadata_df(assets_to_sids={}):
     metadata_df.index = sids
 
     return metadata_df
+
 
 @bundles.register('alpha_vantage', calendar_name="NYSE", minutes_per_day=390)
 def api_to_bundle(interval=['1m']):
@@ -297,37 +300,38 @@ def api_to_bundle(interval=['1m']):
                ):
 
         divs_splits = {'divs': pd.DataFrame(columns=['sid', 'amount',
-                                                  'ex_date', 'record_date',
-                                                  'declared_date', 'pay_date']),
+                                                     'ex_date', 'record_date',
+                                                     'declared_date', 'pay_date']),
                        'splits': pd.DataFrame(columns=['sid', 'ratio',
-                                                    'effective_date'])}
+                                                       'effective_date'])}
 
         assets_to_sids = asset_to_sid_map(asset_db_writer.asset_finder, list_assets())
 
         def minute_data_generator():
             return (sid_df for (sid_df, *metadata.iloc[sid_df[0]]) in
-                df_generator(
-                    interval='1m',
-                    start=start_session,
-                    end=end_session,
-                    assets_to_sids=assets_to_sids,
-                    divs_splits=divs_splits))
+                    df_generator(
+                        interval='1m',
+                        start=start_session,
+                        end=end_session,
+                        assets_to_sids=assets_to_sids,
+                        divs_splits=divs_splits))
 
         def daily_data_generator():
             return (sid_df for (sid_df, *metadata.loc[sid_df[0]])
-                in df_generator(
-                    interval='1d',
-                    start=start_session,
-                    end=end_session,
-                    assets_to_sids=assets_to_sids,
-                    divs_splits=divs_splits))
+                    in df_generator(
+                interval='1d',
+                start=start_session,
+                end=end_session,
+                assets_to_sids=assets_to_sids,
+                divs_splits=divs_splits))
 
         metadata = metadata_df(assets_to_sids)
 
         assets = list_assets()
         for _interval in interval:
             if _interval == '1d':
-                daily_bar_writer.write(daily_data_generator(), assets=assets_to_sids.values(), show_progress=True, invalid_data_behavior='raise')
+                daily_bar_writer.write(daily_data_generator(), assets=assets_to_sids.values(), show_progress=True,
+                                       invalid_data_behavior='raise')
             elif _interval == '1m':
                 minute_bar_writer.write(minute_data_generator(), show_progress=True)
 
@@ -347,6 +351,7 @@ def api_to_bundle(interval=['1m']):
         print(metadata)
 
     return ingest
+
 
 def asset_to_sid_map(asset_finder, symbols):
     assets_to_sids = {}
@@ -368,6 +373,7 @@ def asset_to_sid_map(asset_finder, symbols):
 
     return assets_to_sids
 
+
 if __name__ == '__main__':
     from zipline.data.bundles import register
 
@@ -386,8 +392,8 @@ if __name__ == '__main__':
 
     register(
         'alpha_vantage',
-        #api_to_bundle(interval=['1d', '1m']),
-        #api_to_bundle(interval=['1m']),
+        # api_to_bundle(interval=['1d', '1m']),
+        # api_to_bundle(interval=['1m']),
         api_to_bundle(interval=['1d']),
         calendar_name='NYSE',
         start_session=start_date,
