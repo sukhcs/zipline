@@ -48,7 +48,6 @@ os.environ["ALPHAVANTAGE_API_KEY"] = av_config.api_key  # make sure it's set in 
 UNIVERSE = Universe.NASDAQ100
 
 ASSETS = None
-ASSETS = ['AAPL', 'TSLA', 'GOOG']
 def list_assets():
     global ASSETS
     if not ASSETS:
@@ -58,7 +57,7 @@ def list_assets():
             ASSETS = list(set(custom_asset_list))
         else:
             try:
-                universe = Universe[av_config["universe"]]
+                universe = Universe[av_config.av["universe"]]
             except:
                 universe = Universe.ALL
             if universe == Universe.ALL:
