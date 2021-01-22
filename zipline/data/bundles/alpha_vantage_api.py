@@ -98,11 +98,10 @@ def fill_daily_gaps(df):
 # function to be able to properly do rate-limiting.
 @sleep_and_retry
 @limits(calls=AV_CALLS_PER_FREQ, period=AV_FREQ_SEC + AV_TOLERANCE_SEC)
-def av_api_wrapper(symbol, interval, slice=None):
-
+def av_api_wrapper(symbol, interval, _slice=None):
     if interval == '1m':
         ts = TimeSeries(output_format='csv')
-        data_slice, meta_data = ts.get_intraday_extended(symbol, interval='1min', slice=slice, adjusted='false')
+        data_slice, meta_data = ts.get_intraday_extended(symbol, interval='1min', slice=_slice, adjusted='false')
         return data_slice
 
     else:
@@ -116,9 +115,9 @@ def av_get_data_for_symbol(symbol, start, end, interval):
         data = []
         for i in range(1, 3):
             for j in range(1, 13):
-                slice = 'year' + str(i) + 'month' + str(j)
-                # print('requesting slice ' + slice + ' for ' + symbol)
-                data_slice = av_api_wrapper(symbol, interval=interval, slice=slice)
+                _slice = 'year' + str(i) + 'month' + str(j)
+                # print('requesting slice ' + _slice + ' for ' + symbol)
+                data_slice = av_api_wrapper(symbol, interval=interval, slice=_slice)
 
                 # dont know better way to convert _csv.reader to list or DataFrame
                 table = []
