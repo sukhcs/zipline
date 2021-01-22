@@ -27,6 +27,7 @@ from trading_calendars import TradingCalendar
 
 from ratelimit import limits, sleep_and_retry
 
+import config
 from zipline.data.bundles import core as bundles
 from zipline.data.bundles.universe import Universe, get_sp500, get_sp100, get_nasdaq100
 
@@ -37,9 +38,10 @@ import time
 
 from zipline.errors import SymbolNotFound, SidsNotFound
 
-AV_FREQ_SEC = int(os.environ.get('AV_FREQ_SEC', 60))
-AV_CALLS_PER_FREQ = int(os.environ.get('AV_CALLS_PER_FREQ', 5))
-AV_TOLERANCE_SEC = int(os.environ.get('AV_TOLERANCE_SEC', 1))
+av_config = config.AlphaVantage()
+AV_FREQ_SEC = av_config.sample_frequency
+AV_CALLS_PER_FREQ = av_config.max_calls_per_freq
+AV_TOLERANCE_SEC = av_config.breathing_space
 
 ASSETS = None
 # uncomment this line if you want a static list of symbols
