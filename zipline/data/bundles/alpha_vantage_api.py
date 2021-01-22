@@ -186,7 +186,6 @@ def av_get_data_for_symbol(symbol, start, end, interval):
     if 'split' in df.columns:
         df['split'] = pd.to_numeric(df['split'], downcast='float')
 
-    df.to_csv('/tmp/' + symbol + '_' + interval + '.csv')
 
     return df
 
