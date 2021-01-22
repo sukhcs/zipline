@@ -37,7 +37,6 @@ import os
 import time
 
 from zipline.errors import SymbolNotFound, SidsNotFound
-import zipline.data.bundles.alpaca_api as alpaca
 
 av_config = config.AlphaVantage()
 AV_FREQ_SEC = av_config.sample_frequency
@@ -64,6 +63,7 @@ def list_assets():
                 # alpha vantage doesn't define a universe. we could try using alpaca's universe if the
                 # user defined credentials. if not, we will raise an exception.
                 try:
+                    import zipline.data.bundles.alpaca_api as alpaca
                     alpaca.initialize_client()
                     ASSETS = all_alpaca_assets(alpaca.CLIENT)
                 except:
