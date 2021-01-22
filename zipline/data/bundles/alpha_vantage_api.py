@@ -29,7 +29,7 @@ from ratelimit import limits, sleep_and_retry
 
 import config
 from zipline.data.bundles import core as bundles
-from zipline.data.bundles.universe import Universe, get_sp500, get_sp100, get_nasdaq100
+from zipline.data.bundles.universe import Universe, get_sp500, get_sp100, get_nasdaq100, all_alpaca_assets
 
 from zipline.data import bundles as bundles_module
 import trading_calendars
@@ -37,6 +37,7 @@ import os
 import time
 
 from zipline.errors import SymbolNotFound, SidsNotFound
+import zipline.data.bundles.alpaca_api as alpaca
 
 av_config = config.AlphaVantage()
 AV_FREQ_SEC = av_config.sample_frequency
@@ -44,26 +45,38 @@ AV_CALLS_PER_FREQ = av_config.max_calls_per_freq
 AV_TOLERANCE_SEC = av_config.breathing_space
 os.environ["ALPHAVANTAGE_API_KEY"] = av_config.api_key  # make sure it's set in env variable
 
-ASSETS = None
-# uncomment this line if you want a static list of symbols
-# ASSETS = ['JNJ','TSLA','GOOGL']
 UNIVERSE = Universe.NASDAQ100
-# UNIVERSE = Universe.SP500
 
-
+ASSETS = None
+ASSETS = ['AAPL', 'TSLA', 'GOOG']
 def list_assets():
-    global ASSETS, UNIVERSE
+    global ASSETS
     if not ASSETS:
-        if UNIVERSE == Universe.SP100:
-            ASSETS = get_sp100()
-        elif UNIVERSE == Universe.SP500:
-            ASSETS = get_sp500()
-        elif UNIVERSE == Universe.NASDAQ100:
-            ASSETS = get_nasdaq100()
+        custom_asset_list = av_config.av.get("custom_asset_list")
+        if custom_asset_list:
+            custom_asset_list = custom_asset_list.strip().replace(" ", "").split(",")
+            ASSETS = list(set(custom_asset_list))
         else:
-            ASSETS = ['AAPL']
-
-    return sorted(list(set(ASSETS)))
+            try:
+                universe = Universe[av_config["universe"]]
+            except:
+                universe = Universe.ALL
+            if universe == Universe.ALL:
+                # alpha vantage doesn't define a universe. we could try using alpaca's universe if the
+                # user defined credentials. if not, we will raise an exception.
+                try:
+                    alpaca.initialize_client()
+                    ASSETS = all_alpaca_assets(alpaca.CLIENT)
+                except:
+                    raise Exception("You tried to use Universe.ALL but you didn't define the alpaca credentials.")
+            elif universe == Universe.SP100:
+                ASSETS = get_sp100()
+            elif universe == Universe.SP500:
+                ASSETS = get_sp500()
+            elif universe == Universe.NASDAQ100:
+                ASSETS = get_nasdaq100()
+            ASSETS = list(set(ASSETS))
+    return ASSETS
 
 
 def fill_daily_gaps(df):
