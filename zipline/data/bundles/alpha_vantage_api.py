@@ -22,15 +22,13 @@ import pandas as pd
 
 from alpha_vantage.timeseries import TimeSeries
 
-from datetime import date, datetime, timedelta, time as dtime
-from dateutil import tz
+from datetime import date, timedelta
 from trading_calendars import TradingCalendar
-from dateutil.parser import parse as date_parse
 
-from ratelimit import limits,sleep_and_retry
+from ratelimit import limits, sleep_and_retry
 
 from zipline.data.bundles import core as bundles
-from zipline.data.bundles.universe import Universe, all_alpaca_assets, get_sp500, get_sp100, get_nasdaq100
+from zipline.data.bundles.universe import Universe, get_sp500, get_sp100, get_nasdaq100
 
 from zipline.data import bundles as bundles_module
 import trading_calendars
