@@ -42,6 +42,7 @@ av_config = config.AlphaVantage()
 AV_FREQ_SEC = av_config.sample_frequency
 AV_CALLS_PER_FREQ = av_config.max_calls_per_freq
 AV_TOLERANCE_SEC = av_config.breathing_space
+os.environ["ALPHAVANTAGE_API_KEY"] = av_config.api_key  # make sure it's set in env variable
 
 ASSETS = None
 # uncomment this line if you want a static list of symbols
