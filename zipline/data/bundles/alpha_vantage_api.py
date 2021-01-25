@@ -38,7 +38,7 @@ import time
 
 from zipline.errors import SymbolNotFound, SidsNotFound
 
-av_config = config.AlphaVantage()
+av_config = config.bundle.AlphaVantage()
 AV_FREQ_SEC = av_config.sample_frequency
 AV_CALLS_PER_FREQ = av_config.max_calls_per_freq
 AV_TOLERANCE_SEC = av_config.breathing_space
