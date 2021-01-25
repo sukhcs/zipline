@@ -383,12 +383,13 @@ class SQLiteAdjustmentWriter(object):
             self.engine = False
 
         elif isinstance(conn_or_path, six.string_types):
-            if overwrite:
-                try:
-                    remove(conn_or_path)
-                except OSError as e:
-                    if e.errno != ENOENT:
-                        raise
+            if not conn_or_path.startswith('postgresql://'):
+                if overwrite:
+                    try:
+                        remove(conn_or_path)
+                    except OSError as e:
+                        if e.errno != ENOENT:
+                            raise
 
             # switch to regex if we want to support other engines
             if conn_or_path.startswith('postgresql://'):
