@@ -101,17 +101,14 @@ def fill_daily_gaps(df):
     df = df.append(pd.DataFrame(index=to_fill)).sort_index()
 
     # forward-fill these values regularly
-    cols = ['close', 'dividend', 'split']  # list of columns to update
-    df[cols] = df[cols].fillna(method='ffill')
-
-    # fill remaining fields except for volume with the previous close
-    mask_fill = pd.isnull(df['open']) & pd.isnull(df['high']) & pd.isnull(df['low'])
-    df.loc[mask_fill, 'open'] = df['close']
-    df.loc[mask_fill, 'high'] = df['close']
-    df.loc[mask_fill, 'low'] = df['close']
-
-    # fill volume with zero
-    df['volume'] = df['volume'].fillna(0)
+    df.close.fillna(method='ffill', inplace=True)
+    df.dividend.fillna(0, inplace=True)
+    df.split.fillna(1, inplace=True)
+    df.volume.fillna(0, inplace=True)
+    df.open.fillna(df.close, inplace=True)
+    df.high.fillna(df.close, inplace=True)
+    df.low.fillna(df.close, inplace=True)
+    df.adj_close.fillna(df.close, inplace=True)
 
     filled = len(to_fill)
     print(f'\nWarning! Filled {filled} empty values!')
@@ -197,7 +194,6 @@ def av_get_data_for_symbol(symbol, start, end, interval):
 
     if 'split' in df.columns:
         df['split'] = pd.to_numeric(df['split'], downcast='float')
-
 
     return df
 
