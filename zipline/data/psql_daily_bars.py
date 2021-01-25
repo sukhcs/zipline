@@ -14,7 +14,10 @@
 from functools import partial
 import warnings
 
+import psycopg2
 import sqlalchemy as sa
+
+import config.data_backend
 from zipline.utils.db_utils import check_and_create_engine
 import pandas as pd
 
@@ -51,7 +54,6 @@ from zipline.utils.memoize import lazyval
 from zipline.utils.cli import maybe_show_progress
 from ._equities import _compute_row_slices, _read_tape_data
 
-
 logger = logbook.Logger('UsEquityPricing')
 
 OHLC = frozenset(['open', 'high', 'low', 'close'])
@@ -62,6 +64,7 @@ US_EQUITY_PRICING_COLUMNS = (
 UINT32_MAX = iinfo(np.uint32).max
 
 TABLE = 'ohlcv_daily'
+
 
 def check_uint32_safe(value, colname):
     if value >= UINT32_MAX:
@@ -121,7 +124,7 @@ def winsorise_uint32(df, invalid_data_behavior, column, *columns):
 
 class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
     """
-    Reader for raw pricing data written by BcolzDailyOHLCVWriter.
+    Reader for raw pricing data written by PSQLDailyBarWriter.
 
     Parameters
     ----------
@@ -190,6 +193,7 @@ class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
     --------
     zipline.data.bcolz_daily_bars.BcolzDailyBarWriter
     """
+
     def __init__(self, path, read_all_threshold=3000):
         self.conn = check_and_create_engine(path, False)
 
@@ -217,7 +221,7 @@ class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
             start_session = Timestamp(outer_dates['min_day'][0], tz='UTC')
             end_session = Timestamp(outer_dates['max_day'][0], tz='UTC')
 
-            calendar_name = 'XNYS' # NYSE for POC only
+            calendar_name = 'XNYS'  # NYSE for POC only
             cal = get_calendar(calendar_name)
 
             self._sessions = cal.sessions_in_range(start_session, end_session)
@@ -292,10 +296,10 @@ class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
             total = total + info['ct'][i]
 
             if i == 0:
-              first_rows[info['id'][i]] = 0
+                first_rows[info['id'][i]] = 0
             last_rows[info['id'][i]] = total - 1
             if i > 0:
-              first_rows[info['id'][i]] = last_rows[last_id] + 1
+                first_rows[info['id'][i]] = last_rows[last_id] + 1
 
             last_id = info['id'][i]
 
@@ -382,7 +386,7 @@ class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
     def load_raw_arrays_slow(self, columns, start_date, end_date, assets):
         result = []
 
-        sessions = self.sessions[ self.sessions.get_loc(start_date) : self.sessions.get_loc(end_date) + 1]
+        sessions = self.sessions[self.sessions.get_loc(start_date): self.sessions.get_loc(end_date) + 1]
 
         for column in columns:
             column_vals = []
@@ -573,7 +577,40 @@ class PSQLDailyBarWriter(object):
         self._end_session = end_session
         self._calendar = calendar
 
+        try:
+            self.conn.connect()
+        except sa.exc.OperationalError:
+            # can't connect to db. might mean that the database is not created yey.
+            # let's create it. (happens in first time usage)
+            self.ensure_database(db_path)
+
         self.ensure_table()
+
+    def ensure_database(self, db_path):
+        """
+        create the bundle database. it will have the name of the bundle
+        :param db_path: expected db path (table). used to get the bundle name.
+        """
+        db_config = config.data_backend.PostgresDB()
+        host = db_config.host
+        port = db_config.port
+        user = db_config.user
+        password = db_config.password
+        conn = psycopg2.connect(
+            database="",
+            user=user,
+            password=password,
+            host=host,
+            port=port
+        )
+        conn.autocommit = True
+        # Creating a cursor object using the cursor() method
+        cursor = conn.cursor()
+        bundle_name = db_path.split("/")[-1]
+        sql = f'CREATE database {bundle_name}'
+        # Creating a database
+        cursor.execute(sql)
+        print(f"Database {bundle_name} created successfully........")
 
     def ensure_table(self):
         metadata = sa.MetaData()
@@ -581,13 +618,13 @@ class PSQLDailyBarWriter(object):
         ohlcv_daily = sa.Table(
             'ohlcv_daily',
             metadata,
-            sa.Column('id', sa.Integer() ),
-            sa.Column('day', sa.Date() ),
-            sa.Column('open', sa.Float() ),
-            sa.Column('high', sa.Float() ),
-            sa.Column('low', sa.Float() ),
-            sa.Column('close', sa.Float() ),
-            sa.Column('volume', sa.BigInteger() ),
+            sa.Column('id', sa.Integer()),
+            sa.Column('day', sa.Date()),
+            sa.Column('open', sa.Float()),
+            sa.Column('high', sa.Float()),
+            sa.Column('low', sa.Float()),
+            sa.Column('close', sa.Float()),
+            sa.Column('volume', sa.BigInteger()),
         )
 
         sa.Index('id_day', ohlcv_daily.c.id, ohlcv_daily.c.day)
@@ -699,28 +736,28 @@ class PSQLDailyBarWriter(object):
 
         asset_sessions = self._calendar.sessions_in_range(first_day, last_day)
         err_msg = (
-                'Got {} rows for daily bars table with first day={}, last '
-                'day={}, expected {} rows.\n'
-                'Missing sessions: {}\n'
-                'Extra sessions: {}'.format(
-                    len(data_slice),
-                    first_day,
-                    last_day,
-                    len(asset_sessions),
-                    asset_sessions.difference(
-                        to_datetime(
-                            np.array(data_slice.index),
-                            unit='s',
-                            utc=True,
-                        )
-                    ).tolist(),
+            'Got {} rows for daily bars table with first day={}, last '
+            'day={}, expected {} rows.\n'
+            'Missing sessions: {}\n'
+            'Extra sessions: {}'.format(
+                len(data_slice),
+                first_day,
+                last_day,
+                len(asset_sessions),
+                asset_sessions.difference(
                     to_datetime(
                         np.array(data_slice.index),
                         unit='s',
                         utc=True,
-                    ).difference(asset_sessions).tolist(),
-                )
+                    )
+                ).tolist(),
+                to_datetime(
+                    np.array(data_slice.index),
+                    unit='s',
+                    utc=True,
+                ).difference(asset_sessions).tolist(),
             )
+        )
 
         assert len(data_slice) == len(asset_sessions), err_msg
 
@@ -755,7 +792,7 @@ class PSQLDailyBarWriter(object):
             f'SELECT MAX(day) as last_day, MIN(day) as first_day '
             f'FROM ohlcv_daily WHERE id = {sid}',
             self.conn,
-            parse_dates=['last_day','first_day']
+            parse_dates=['last_day', 'first_day']
         )
 
         if pd.isnull((edge_days['first_day'][0])):
@@ -765,8 +802,8 @@ class PSQLDailyBarWriter(object):
         first_day = edge_days['first_day'][0]
         last_day = edge_days['last_day'][0]
 
-        before_slice = data[ data.index < first_day ]
-        after_slice = data[ data.index > last_day ]
+        before_slice = data[data.index < first_day]
+        after_slice = data[data.index > last_day]
 
         # check if before-slice and after-slice are aligned with data in db
         # e.g. don't allow gaps in terms of sessions. should be exactly two
