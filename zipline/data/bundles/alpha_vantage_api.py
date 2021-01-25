@@ -79,6 +79,18 @@ def list_assets():
 
 
 def fill_daily_gaps(df):
+    """
+    filling missing data. logic:
+    1. get start date and end date from df. (caveat: if the missing dates are at the edges this will not work)
+    2. use trading calendars to get all session dates between start and end
+    3. use difference() to get only missing dates.
+    4. add those dates to the original df with NaN
+    5. dividends get 0 and split gets 1 (meaning no split happened)
+    6. all the rest get ffill of the close value.
+    7. volume get 0
+    :param df:
+    :return:
+    """
     cal: TradingCalendar = trading_calendars.get_calendar('NYSE')
     sessions = cal.sessions_in_range(df.index[0], df.index[-1])
 
