@@ -729,40 +729,47 @@ class PSQLDailyBarWriter(object):
             if not table.empty:
                 table.to_sql('ohlcv_daily', self.conn, if_exists='append')
 
-    # check that we have exactly the amount of days we expect
     def _ensure_sessions_consistency(self, data_slice, invalid_data_behavior):
-        if len(data_slice) == 0:
-            return
+        """
+        check that we have exactly the amount of days we expect by checking the start and end dates
+        counting the active days in between using the trading calendar data
+        """
+        val = True
 
-        first_day = data_slice.index[0]
-        last_day = data_slice.index[-1]
+        if not data_slice.empty:
 
-        asset_sessions = self._calendar.sessions_in_range(first_day, last_day)
-        err_msg = (
-            'Got {} rows for daily bars table with first day={}, last '
-            'day={}, expected {} rows.\n'
-            'Missing sessions: {}\n'
-            'Extra sessions: {}'.format(
-                len(data_slice),
-                first_day,
-                last_day,
-                len(asset_sessions),
-                asset_sessions.difference(
-                    to_datetime(
-                        np.array(data_slice.index),
-                        unit='s',
-                        utc=True,
+            first_day = data_slice.index[0]
+            last_day = data_slice.index[-1]
+
+            asset_sessions = self._calendar.sessions_in_range(first_day, last_day)
+            if len(data_slice) != len(asset_sessions):
+                err_msg = (
+                    'Got {} rows for daily bars table with first day={}, last '
+                    'day={}, expected {} rows.\n'
+                    'Missing sessions: {}\n'
+                    'Extra sessions: {}'.format(
+                        len(data_slice),
+                        first_day,
+                        last_day,
+                        len(asset_sessions),
+                        asset_sessions.difference(
+                            to_datetime(
+                                np.array(data_slice.index),
+                                unit='s',
+                                utc=True,
+                            )
+                        ).tolist(),
+                        to_datetime(
+                            np.array(data_slice.index),
+                            unit='s',
+                            utc=True,
+                        ).difference(asset_sessions).tolist(),
                     )
-                ).tolist(),
-                to_datetime(
-                    np.array(data_slice.index),
-                    unit='s',
-                    utc=True,
-                ).difference(asset_sessions).tolist(),
-            )
-        )
+                )
+                val = False
+                logger.warning(err_msg)
 
-        assert len(data_slice) == len(asset_sessions), err_msg
+        return val
 
     @expect_element(invalid_data_behavior={'warn', 'raise', 'ignore'})
     def _write_to_postgres(self, sid, data, invalid_data_behavior):
