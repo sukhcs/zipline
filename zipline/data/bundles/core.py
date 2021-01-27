@@ -153,7 +153,7 @@ def from_bundle_ingest_dirname(cs):
 
 
 def ingestions_for_bundle(bundle, environ=None):
-    print( os.listdir(pth.data_path([bundle], environ) ))
+    print(os.listdir(pth.data_path([bundle], environ)))
     return sorted(
         (from_bundle_ingest_dirname(ing)
          for ing in os.listdir(pth.data_path([bundle], environ))
@@ -212,6 +212,7 @@ class BadClean(click.ClickException, ValueError):
     --------
     clean
     """
+
     def __init__(self, before, after, keep_last):
         super(BadClean, self).__init__(
             'Cannot pass a combination of `before` and `after` with '
@@ -435,9 +436,7 @@ def _make_bundle_core():
                 asset_finder = None
 
                 if db_path_external:
-                    assets_db_path = db_path_external
-                    adjustments_db_path = db_path_external
-                    daily_bars_path = db_path_external
+                    assets_db_path = adjustments_db_path = daily_bar_writer = db_path_external
                     daily_bar_writer = PSQLDailyBarWriter(
                         db_path_external,
                         calendar,
@@ -447,9 +446,9 @@ def _make_bundle_core():
                     daily_bar_reader = PSQLDailyBarReader(db_path_external)
                     minute_bar_writer = None
                     try:
-                        asset_finder=AssetFinder(db_path_external)
+                        asset_finder = AssetFinder(db_path_external)
                     except InvalidRequestError:
-                        asset_finder=None
+                        asset_finder = None
 
 
                 else:
@@ -587,15 +586,15 @@ def _make_bundle_core():
         if db_path_external:
             assets_db_path = db_path_external
             adjustments_db_path = db_path_external
-            #assets_db_path = asset_db_path(name, timestr, environ=environ)
-            #adjustments_db_path = adjustment_db_path(name, timestr, environ=environ)
+            # assets_db_path = asset_db_path(name, timestr, environ=environ)
+            # adjustments_db_path = adjustment_db_path(name, timestr, environ=environ)
             daily_bar_reader = PSQLDailyBarReader(db_path_external)
             minute_bar_reader = None
         else:
             assets_db_path = asset_db_path(name, timestr, environ=environ)
             adjustments_db_path = adjustment_db_path(name, timestr, environ=environ)
-            daily_bar_reader = BcolzDailyBarReader( daily_equity_path(name, timestr, environ=environ) )
-            minute_bar_reader=BcolzMinuteBarReader( minute_equity_path(name, timestr, environ=environ) )
+            daily_bar_reader = BcolzDailyBarReader(daily_equity_path(name, timestr, environ=environ))
+            minute_bar_reader = BcolzMinuteBarReader(minute_equity_path(name, timestr, environ=environ))
 
         return BundleData(
             asset_finder=AssetFinder(
@@ -672,8 +671,8 @@ def _make_bundle_core():
             def should_clean(name):
                 dt = from_bundle_ingest_dirname(name)
                 return (
-                    (before is not None and dt < before) or
-                    (after is not None and dt > after)
+                        (before is not None and dt < before) or
+                        (after is not None and dt > after)
                 )
 
         elif keep_last >= 0:
