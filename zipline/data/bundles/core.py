@@ -10,6 +10,7 @@ import pandas as pd
 from trading_calendars import get_calendar
 from toolz import curry, complement, take
 
+import config.data_backend
 from ..adjustments import SQLiteAdjustmentReader, SQLiteAdjustmentWriter
 from ..bcolz_daily_bars import BcolzDailyBarReader, BcolzDailyBarWriter
 from ..minute_bars import (
@@ -95,24 +96,27 @@ def asset_db_relative(bundle_name, timestr, db_version=None):
 
     return bundle_name, timestr, 'assets-%d.sqlite' % db_version
 
+
 def external_db_path(bundle_name, environ):
-    if environ.get('ZIPLINE_DATA_BACKEND', False):
-        if environ['ZIPLINE_DATA_BACKEND'] == 'postgresql':
-            host = environ.get('ZIPLINE_DATA_BACKEND_HOST', 'localhost')
-            port = environ.get('ZIPLINE_DATA_BACKEND_PORT', '')
-            user = environ.get('ZIPLINE_DATA_BACKEND_USER', '')
-            password = environ.get('ZIPLINE_DATA_BACKEND_PASSWORD', '')
+    path = None
+    if config.data_backend.db_backend_configured():
+        if config.data_backend.db_backend_configured() == 'postgres':
+            db = config.data_backend.PostgresDB()
+            host = db.host
+            port = db.port
+            user = db.user
+            password = db.password
 
             user_pwd_str = f'{user}:{password}@' if user != '' else ''
             host_port_str = f'{host}:{port}' if port != '' else f'{host}'
 
             # we assume bundle-name as database-name
-            return(f'postgresql://{user_pwd_str}{host_port_str}/{bundle_name}')
+            path = f'postgresql://{user_pwd_str}{host_port_str}/{bundle_name}'
         else:
             backend = environ['ZIPLINE_DATA_BACKEND']
             raise Exception(f'Backend {backend} currently not supported')
 
-    return None
+    return path
 
 
 def to_bundle_ingest_dirname(ts):
