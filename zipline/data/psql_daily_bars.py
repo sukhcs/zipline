@@ -54,7 +54,7 @@ from zipline.utils.memoize import lazyval
 from zipline.utils.cli import maybe_show_progress
 from ._equities import _compute_row_slices, _read_tape_data
 
-logger = logbook.Logger('UsEquityPricing')
+logger = logbook.Logger('PSqlDailyBars')
 
 OHLC = frozenset(['open', 'high', 'low', 'close'])
 US_EQUITY_PRICING_COLUMNS = (
