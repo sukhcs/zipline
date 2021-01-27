@@ -718,7 +718,9 @@ class PSQLDailyBarWriter(object):
             def iterator(iterator=iterator, assets=set(assets)):
                 for asset_id, table in iterator:
                     if asset_id not in assets:
-                        raise ValueError('unknown asset id %r' % asset_id)
+                        logger.warning(f"unknown asset id {asset_id}. skipping.")
+                        continue
+
                     yield asset_id, table
 
         for asset_id, table in iterator:
