@@ -773,62 +773,114 @@ class PSQLDailyBarWriter(object):
 
     @expect_element(invalid_data_behavior={'warn', 'raise', 'ignore'})
     def _write_to_postgres(self, sid, data, invalid_data_behavior):
-        # rename index-column to day and convert it to datetime and utc
-        if data.index[0].tzname() != 'UTC':
-            data.index = [x.tz_convert('utc') for x in data.index]
 
-        data.index = pd.to_datetime(data.index.rename('day'), utc=True)
+        result = self._format_df_columns_and_index(data, sid)
+        if not result.empty:
+            # set proper id
+            data['id'] = sid
 
-        # drop time-information, it will confuse the aligning-logic
-        data.index = data.index.normalize()
+            edge_days = self._get_exisiting_data_dates_from_db(sid)
 
-        # check if we have all necessary columns
-        for column in US_EQUITY_PRICING_COLUMNS:
-            # id not necessary
-            if column == 'id':
-                continue
+            if not self._data_for_sid_already_exist_in_db(edge_days):
+                # this asset is still not in the DB. we write everything we got
+                if self._ensure_sessions_consistency(data, invalid_data_behavior):
+                    # data is not consistent. we will not write anything to db
+                    result = data
+                else:
+                    result = pd.DataFrame(columns=data.columns)
+            else:
+                result = self._validate_data_consistency_on_edges(sid, data, edge_days, invalid_data_behavior)
 
-            if column not in list(data.columns) + [data.index.name]:
-                raise Exception('columns most contain day,open,high,low,close,volume')
+        return result
 
-        # drop columns not of interest
-        cols_to_drop = [column for column in data.columns if column not in US_EQUITY_PRICING_COLUMNS]
-        data.drop(columns=cols_to_drop, inplace=True)
+    def _validate_data_consistency_on_edges(self, sid, data, edge_days, invalid_data_behavior):
+        """
+        there's already data in the db for this sid. we may append data at the beginning and/or end.
+        before we do that, we must make sure that both segments are consistent.
+        note: we could make a better effort by loosing up restriction and if one segment is corrupted still accept
+              the other one.
+        """
+        first_day = edge_days['first_day'][0]
+        last_day = edge_days['last_day'][0]
+        before_slice = data[data.index < first_day]
+        after_slice = data[data.index > last_day]
+        # check if before-slice and after-slice are aligned with data in db
+        # e.g. don't allow gaps in terms of sessions. should be exactly two
+        # sessions (sessions on the edge of the data and the slice)
+        consistent_data = True
+        if not before_slice.empty:
+            backward_gap = len(self._calendar.sessions_in_range(before_slice.index[-1], first_day))
+            if backward_gap != 2:
+                # max allowed gap for consistent data is 2
+                logger.warning(f"data for {sid} contains backward gaps {backward_gap} "
+                               f"and not consistent. will not be written to db.")
+                consistent_data = False
+        if not after_slice.empty:
+            forward_gap = len(self._calendar.sessions_in_range(last_day, after_slice.index[-1]))
+            if forward_gap != 2:
+                logger.warning(f"data for {sid} contains forward gaps {forward_gap} "
+                               f"and not consistent. will not be written to db.")
+                consistent_data = False
+        if not self._ensure_sessions_consistency(before_slice, invalid_data_behavior) or not \
+                self._ensure_sessions_consistency(after_slice, invalid_data_behavior):
+            consistent_data = False
+        if consistent_data:
+            result = before_slice.append(after_slice)
+        else:
+            result = pd.DataFrame(columns=data.columns)
+        return result
 
-        # set proper id
-        data['id'] = sid
+    def _data_for_sid_already_exist_in_db(self, edges: pd.DataFrame) -> bool:
+        """
+        edges is a query performed for sid in db. if it's empty it means the db doesn't contain data for this sid yet.
+        :return: bool
+        """
+        return not edges.empty
 
+    def _get_exisiting_data_dates_from_db(self, sid):
+        """
+        using the sid- query the db and get the dates (start and end) for data stored in db
+        :param sid:
+        :return:
+        """
         edge_days = pd.read_sql(
             f'SELECT MAX(day) as last_day, MIN(day) as first_day '
             f'FROM ohlcv_daily WHERE id = {sid}',
             self.conn,
             parse_dates=['last_day', 'first_day']
         )
+        return edge_days
 
-        if pd.isnull((edge_days['first_day'][0])):
-            self._ensure_sessions_consistency(data, invalid_data_behavior)
-            return data
+    def _format_df_columns_and_index(self, data, sid):
+        """
+        make sure that the data received is in the structure we expect columns and index wise.
+        :param data: data from data bundle
+        :param sid: sid as it should be stored in db
+        :return: formatted data or empty df if the data is corrupted
+        """
+        result = pd.DataFrame(columns=data.columns)
+        # rename index-column to day and convert it to datetime and utc
+        if data.index[0].tzname() != 'UTC':
+            data.index = [x.tz_convert('utc') for x in data.index]
+        data.index.rename("day", inplace=True)
+        # drop time-information, it will confuse the aligning-logic
+        data.index = data.index.normalize()
+        # check if we have all necessary columns
+        corrupted_data = False
+        for column in US_EQUITY_PRICING_COLUMNS:
+            # id not necessary
+            if column == 'id':
+                continue
 
-        first_day = edge_days['first_day'][0]
-        last_day = edge_days['last_day'][0]
+            if column not in list(data.columns) + [data.index.name]:
+                msg = f"corrupted data for :{sid}. columns must contain day, open, high, low, close, volume"
+                logger.warning(msg)
+                corrupted_data = True
+                break
+        if not corrupted_data:
+            # drop columns not of interest
+            cols_to_drop = [column for column in data.columns if column not in US_EQUITY_PRICING_COLUMNS]
+            data.drop(columns=cols_to_drop, inplace=True)
+            result = data
 
-        before_slice = data[data.index < first_day]
-        after_slice = data[data.index > last_day]
-
-        # check if before-slice and after-slice are aligned with data in db
-        # e.g. don't allow gaps in terms of sessions. should be exactly two
-        # sessions (sessions on the edge of the data and the slice)
-        if len(before_slice > 0):
-            assert len(self._calendar.sessions_in_range(before_slice.index[-1], first_day)) == 2, (
-                'Data before db-data is not aligned with data in db!')
-
-        if len(after_slice > 0):
-            assert len(self._calendar.sessions_in_range(last_day, after_slice.index[0])) == 2, (
-                'Data after db-data is not aligned with data in db!')
-
-        self._ensure_sessions_consistency(before_slice, invalid_data_behavior)
-        self._ensure_sessions_consistency(after_slice, invalid_data_behavior)
-
-        complete_slice = before_slice.append(after_slice)
-
-        return complete_slice
+        return result
