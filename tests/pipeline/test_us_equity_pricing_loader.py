@@ -306,9 +306,10 @@ class USEquityPricingLoaderTestCase(WithAdjustmentReader,
         for table in SPLITS, MERGERS:
             for eff_date_secs, _, sid in table.itertuples(index=False):
                 eff_date = Timestamp(eff_date_secs, unit='s')
-                asset_start, asset_end = EQUITY_INFO.ix[
-                    sid, ['start_date', 'end_date']
-                ]
+
+                asset_start = EQUITY_INFO.loc[sid]['start_date']
+                asset_end = EQUITY_INFO.loc[sid]['end_date']
+
                 self.assertGreaterEqual(eff_date, asset_start)
                 self.assertLessEqual(eff_date, asset_end)
 

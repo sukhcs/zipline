@@ -918,7 +918,7 @@ class TestPositions(zf.WithMakeAlgo, zf.ZiplineTestCase):
             0,
         ]
         for i, expected in enumerate(expected_position_count):
-            self.assertEqual(result.ix[i]['num_positions'], expected)
+            self.assertEqual(result.iloc[i]['num_positions'], expected)
 
     def test_noop_orders(self):
         asset = self.asset_finder.retrieve_asset(1)
@@ -1717,7 +1717,10 @@ def handle_data(context, data):
             stats.transactions = stats.transactions.apply(
                 lambda txns: [toolz.dissoc(txn, 'order_id') for txn in txns]
             )
-        assert_equal(multi_stats, batch_stats)
+
+        assert_equal(
+            multi_stats.reindex(sorted(multi_stats.columns), axis=1),
+            batch_stats.reindex(sorted(batch_stats.columns), axis=1))
 
     def test_batch_market_order_filters_null_orders(self):
         share_counts = [50, 0]
