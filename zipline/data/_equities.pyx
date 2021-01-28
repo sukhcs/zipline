@@ -168,7 +168,7 @@ cpdef _read_bcolz_data(ctable_t table,
     offsets : ndarray[intp
         Arrays in the format returned by _compute_row_slices.
     read_all : bool
-        Whether to read_all sid data at once, or to read a silce from the
+        Whether to read_all sid data at once, or to read a slice from the
         carray for each sid.
 
     Returns
@@ -252,14 +252,15 @@ cpdef _read_tape_data(dict table,
                        intp_t[:] first_rows,
                        intp_t[:] last_rows,
                        intp_t[:] offsets,
-                       bool read_all):
+                       bool read_all) -> object:
     """
-    Load raw bcolz data for the given columns and indices.
+    Load raw dict data for the given columns and indices.
+    basically, slice the desired data from a dict of arrays. 
 
     Parameters
     ----------
-    table : bcolz.ctable
-        The table from which to read.
+    table : dict
+        dict of columns to ndarrays containing all asset's data
     shape : tuple (length 2)
         The shape of the expected output arrays.
     columns : list[str]
@@ -270,7 +271,7 @@ cpdef _read_tape_data(dict table,
     offsets : ndarray[intp
         Arrays in the format returned by _compute_row_slices.
     read_all : bool
-        Whether to read_all sid data at once, or to read a silce from the
+        Whether to read_all sid data at once, or to read a slice from the
         carray for each sid.
 
     Returns
@@ -296,7 +297,7 @@ cpdef _read_tape_data(dict table,
 
     ndays = shape[0]
     nassets = shape[1]
-    if not nassets== len(first_rows) == len(last_rows) == len(offsets):
+    if not nassets == len(first_rows) == len(last_rows) == len(offsets):
         raise ValueError("Incompatible index arrays.")
 
     for column_name in columns:
