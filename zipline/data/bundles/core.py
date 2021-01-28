@@ -10,7 +10,6 @@ import pandas as pd
 from trading_calendars import get_calendar
 from toolz import curry, complement, take
 
-import config.data_backend
 from ..adjustments import SQLiteAdjustmentReader, SQLiteAdjustmentWriter
 from ..bcolz_daily_bars import BcolzDailyBarReader, BcolzDailyBarWriter
 from ..minute_bars import (
@@ -98,6 +97,7 @@ def asset_db_relative(bundle_name, timestr, db_version=None):
 
 
 def external_db_path(bundle_name, environ):
+    import config.data_backend
     path = None
     if config.data_backend.db_backend_configured():
         if config.data_backend.db_backend_configured() == 'postgres':
