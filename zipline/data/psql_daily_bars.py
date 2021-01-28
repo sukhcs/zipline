@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from functools import partial
-import warnings
 
 import psycopg2
 import sqlalchemy as sa
@@ -21,24 +20,19 @@ import config.data_backend
 from zipline.utils.db_utils import check_and_create_engine
 import pandas as pd
 
-from bcolz import carray, ctable
 import logbook
 import numpy as np
 from numpy import (
-    array,
-    full,
     iinfo,
     nan,
 )
 from pandas import (
-    DatetimeIndex,
     NaT,
     read_csv,
     to_datetime,
     Timestamp,
 )
 from six import iteritems, viewkeys
-from toolz import compose
 from trading_calendars import get_calendar
 
 from zipline.data.session_bars import CurrencyAwareSessionBarReader
@@ -64,62 +58,6 @@ US_EQUITY_PRICING_COLUMNS = (
 UINT32_MAX = iinfo(np.uint32).max
 
 TABLE = 'ohlcv_daily'
-
-
-def check_uint32_safe(value, colname):
-    if value >= UINT32_MAX:
-        raise ValueError(
-            "Value %s from column '%s' is too large" % (value, colname)
-        )
-
-
-@expect_element(invalid_data_behavior={'warn', 'raise', 'ignore'})
-def winsorise_uint32(df, invalid_data_behavior, column, *columns):
-    """Drops any record where a value would not fit into a uint32.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The dataframe to winsorise.
-    invalid_data_behavior : {'warn', 'raise', 'ignore'}
-        What to do when data is outside the bounds of a uint32.
-    *columns : iterable[str]
-        The names of the columns to check.
-
-    Returns
-    -------
-    truncated : pd.DataFrame
-        ``df`` with values that do not fit into a uint32 zeroed out.
-    """
-    columns = list((column,) + columns)
-    mask = df[columns] > UINT32_MAX
-
-    if invalid_data_behavior != 'ignore':
-        mask |= df[columns].isnull()
-    else:
-        # we are not going to generate a warning or error for this so just use
-        # nan_to_num
-        df[columns] = np.nan_to_num(df[columns])
-
-    mv = mask.values
-    if mv.any():
-        if invalid_data_behavior == 'raise':
-            raise ValueError(
-                '%d values out of bounds for uint32: %r' % (
-                    mv.sum(), df[mask.any(axis=1)],
-                ),
-            )
-        if invalid_data_behavior == 'warn':
-            warnings.warn(
-                'Ignoring %d values because they are out of bounds for'
-                ' uint32: %r' % (
-                    mv.sum(), df[mask.any(axis=1)],
-                ),
-                stacklevel=3,  # one extra frame for `expect_element`
-            )
-
-    df[mask] = 0
-    return df
 
 
 class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
@@ -257,7 +195,6 @@ class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
         if len(sessions) == 0:
             return {}
 
-        first_day = sessions[0]
         offsets = {}
 
         for i in range(len(info['id'])):
@@ -307,7 +244,7 @@ class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
 
     def _get_first_trading_day(self):
         result = pd.read_sql('SELECT MIN(day) AS first_day FROM ohlcv_daily', self.conn)
-        return result['first_day'][0]
+        return result.first_day.iloc[0]
 
     def _compute_slices(self, start_idx, end_idx, assets):
         """
@@ -455,6 +392,8 @@ class PSQLDailyBarReader(CurrencyAwareSessionBarReader):
 
     def sid_day_index(self, sid, day):
         """
+        all data for all assets is stored sequentially. to get the right values we must find the index
+        for this sid and this day. so we calculate the offset in this long array.
         Parameters
         ----------
         sid : int
