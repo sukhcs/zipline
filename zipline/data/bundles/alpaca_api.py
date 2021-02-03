@@ -352,7 +352,7 @@ if __name__ == '__main__':
     # while not cal.is_session(start_date):
     #     start_date += timedelta(days=1)
 
-    start_date = end_date - timedelta(days=4000)
+    start_date = end_date - timedelta(days=365)
     while not cal.is_session(start_date):
         start_date -= timedelta(days=1)
 
