@@ -1,17 +1,16 @@
 import collections
 import alpaca_trade_api as tradeapi
-from datetime import datetime, timedelta, time as dtime
+from datetime import timedelta, time as dtime
 import numpy as np
-from os.path import isfile, join
+from os.path import join
 from pathlib import Path
 import pandas as pd
-import pickle
 import pytz
 from alpaca_trade_api.common import URL
-from alpaca_trade_api.entity import Aggs
 from dateutil import tz
 from trading_calendars import TradingCalendar
-import yaml
+
+import config
 from zipline.data.bundles import core as bundles
 from zipline.data.bundles.universe import Universe, all_alpaca_assets, get_sp500, get_sp100, get_nasdaq100
 from dateutil.parser import parse as date_parse
