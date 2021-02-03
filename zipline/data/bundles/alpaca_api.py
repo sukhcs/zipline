@@ -27,11 +27,10 @@ NY = "America/New_York"
 
 def initialize_client():
     global CLIENT
-    with open("alpaca.yaml", mode='r') as f:
-        o = yaml.safe_load(f)
-        key = o["key_id"]
-        secret = o["secret"]
-        base_url = o["base_url"]
+    conf = config.bundle.AlpacaConfig()
+    key = conf.key
+    secret = conf.secret
+    base_url = conf.base_url
     CLIENT = tradeapi.REST(key_id=key,
                            secret_key=secret,
                            base_url=URL(base_url))
@@ -40,26 +39,25 @@ ASSETS = None
 def list_assets():
     global ASSETS
     if not ASSETS:
-        with open("alpaca.yaml", mode='r') as f:
-            o = yaml.safe_load(f)
-            custom_asset_list = o.get("custom_asset_list")
-            if custom_asset_list:
-                custom_asset_list = custom_asset_list.strip().replace(" ", "").split(",")
-                ASSETS = list(set(custom_asset_list))
-            else:
-                try:
-                    universe = Universe[o["universe"]]
-                except:
-                    universe = Universe.ALL
-                if universe == Universe.ALL:
-                    ASSETS = all_alpaca_assets(CLIENT)
-                elif universe == Universe.SP100:
-                    ASSETS = get_sp100()
-                elif universe == Universe.SP500:
-                    ASSETS = get_sp500()
-                elif universe == Universe.NASDAQ100:
-                    ASSETS = get_nasdaq100()
-                ASSETS = list(set(ASSETS))
+        conf = config.bundle.AlpacaConfig()
+        custom_asset_list = conf.custom_asset_list
+        if custom_asset_list:
+            custom_asset_list = custom_asset_list.strip().replace(" ", "").split(",")
+            ASSETS = list(set(custom_asset_list))
+        else:
+            try:
+                universe = Universe[conf.universe]
+            except:
+                universe = Universe.ALL
+            if universe == Universe.ALL:
+                ASSETS = all_alpaca_assets(CLIENT)
+            elif universe == Universe.SP100:
+                ASSETS = get_sp100()
+            elif universe == Universe.SP500:
+                ASSETS = get_sp500()
+            elif universe == Universe.NASDAQ100:
+                ASSETS = get_nasdaq100()
+            ASSETS = list(set(ASSETS))
     return ASSETS
 
 def asset_to_sid_map(asset_finder, symbols):
