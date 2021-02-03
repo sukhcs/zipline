@@ -3,16 +3,21 @@ import os
 import yaml
 
 CONFIG_PATH = os.environ.get("ZIPLINE_TRADER_CONFIG")
-with open(CONFIG_PATH, mode='r') as f:
-    ZIPLINE_CONFIG = yaml.safe_load(f)
+if CONFIG_PATH:
+    with open(CONFIG_PATH, mode='r') as f:
+        ZIPLINE_CONFIG = yaml.safe_load(f)
 
 
 def db_backend_configured():
-    return ZIPLINE_CONFIG["backend"].get("type", False)
+    if CONFIG_PATH:
+        return ZIPLINE_CONFIG["backend"].get("type", False)
+    else:
+        return os.environ.get('ZIPLINE_DATA_BACKEND_HOST')
 
 
 class PostgresDB:
-    pg = ZIPLINE_CONFIG["backend"]["postgres"]
+    if CONFIG_PATH:
+        pg = ZIPLINE_CONFIG["backend"]["postgres"]
 
     @property
     def host(self):
@@ -24,7 +29,7 @@ class PostgresDB:
         val = None
         if os.environ.get('ZIPLINE_DATA_BACKEND_HOST'):
             val = os.environ.get('ZIPLINE_DATA_BACKEND_HOST')
-        elif self.pg.get('host'):
+        elif CONFIG_PATH and self.pg.get('host'):
             val = self.pg.get('host')
         if not val:
             raise Exception("Postgres host not defined by user")
@@ -40,7 +45,7 @@ class PostgresDB:
         val = None
         if os.environ.get('ZIPLINE_DATA_BACKEND_PORT'):
             val = os.environ.get('ZIPLINE_DATA_BACKEND_PORT')
-        elif self.pg.get('port'):
+        elif CONFIG_PATH and self.pg.get('port'):
             val = self.pg.get('port')
         if not val:
             raise Exception("Postgres port not defined by user")
@@ -56,7 +61,7 @@ class PostgresDB:
         val = None
         if os.environ.get('ZIPLINE_DATA_BACKEND_USER'):
             val = os.environ.get('ZIPLINE_DATA_BACKEND_USER')
-        elif self.pg.get('user'):
+        elif CONFIG_PATH and self.pg.get('user'):
             val = self.pg.get('user')
         if not val:
             raise Exception("Postgres user not defined by user")
@@ -72,7 +77,7 @@ class PostgresDB:
         val = None
         if os.environ.get('ZIPLINE_DATA_BACKEND_PASSWORD'):
             val = os.environ.get('ZIPLINE_DATA_BACKEND_PASSWORD')
-        elif self.pg.get('password'):
+        elif CONFIG_PATH and self.pg.get('password'):
             val = self.pg.get('password')
         if not val:
             raise Exception("Postgres password not defined by user")
