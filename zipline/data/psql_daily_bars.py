@@ -774,7 +774,7 @@ class PSQLDailyBarWriter(object):
         edges is a query performed for sid in db. if it's empty it means the db doesn't contain data for this sid yet.
         :return: bool
         """
-        return not edges.empty
+        return not pd.isnull(edges['first_day'].iloc[0])
 
     def _get_exisiting_data_dates_from_db(self, sid):
         """
