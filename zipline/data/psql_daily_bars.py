@@ -664,8 +664,8 @@ class PSQLDailyBarWriter(object):
 
         for asset_id, table in iterator:
             # when writing to db, drop timezone, will crash otherwise
-            table.index = table.index.tz_localize(None)
             if not table.empty:
+                table.index = table.index.tz_localize(None)
                 table.to_sql('ohlcv_daily', self.conn, if_exists='append')
 
     def _ensure_sessions_consistency(self, data_slice, invalid_data_behavior):
