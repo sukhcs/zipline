@@ -10,13 +10,9 @@ from pandas import DataFrame, read_csv, Index, Timedelta, NaT
 from trading_calendars import register_calendar_alias
 
 from zipline.utils.cli import maybe_show_progress
-from zipline.errors import SymbolNotFound, SidsNotFound
 
-from datetime import date
-import pandas as pd
-
-from . import core as bundles
-from .common import asset_to_sid_map
+from zipline.data.bundles import core as bundles
+from zipline.data.bundles.common import asset_to_sid_map
 
 handler = StreamHandler(sys.stdout, format_string=" | {record.message}")
 logger = Logger(__name__)
