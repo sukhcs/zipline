@@ -809,46 +809,32 @@ class AssetDBWriter(object):
         try:
             df.to_sql(
                 tbl.name,
-                self.engine,
+                txn.connection,
                 index=True,
                 index_label=first(tbl.primary_key.columns).name,
                 if_exists='append',
                 chunksize=chunk_size,
             )
         except:
-            try:
-                # most of these dbs are unique. so trying to append them may fail. we first try to replace,
-                # and only if it fails we will use the iteration insertion (which is much slower)
-                # the slower iteration will also fail in upd = tbl.update().where(pkey_column == values[pkey_column.name]).values(values)
-                # when trying to insert equity_symbol_mappings. no id in df.
-                df.to_sql(
-                    tbl.name,
-                    self.engine,
-                    index=True,
-                    index_label=first(tbl.primary_key.columns).name,
-                    if_exists='replace',
-                    chunksize=chunk_size,
-                )
-            except:
-                df.reset_index(inplace=True)
+            df.reset_index(inplace=True)
 
-                for i, row in df.iterrows():
-                    values = {}
+            for i, row in df.iterrows():
+                values = {}
 
-                    for column in list(df.columns):
-                        # skip raw index, get set by backend
-                        if column == 'index':
-                            continue
-                        values[column] = row[column]
+                for column in list(df.columns):
+                    # skip raw index, get set by backend
+                    if column == 'index':
+                        continue
+                    values[column] = row[column]
 
-                    try:
-                        ins = tbl.insert().values(values)
-                        txn.execute(ins)
-                    except IntegrityError:
-                        pkey_column = first(tbl.primary_key.columns)
-                        upd = tbl.update().where(pkey_column == values[pkey_column.name]).values(values)
-                        txn.execute(upd)
-                        #print(f'Skipping duplicate for table {tbl.name}: {values}')
+                try:
+                    ins = tbl.insert().values(values)
+                    txn.execute(ins)
+                except IntegrityError:
+                    pkey_column = first(tbl.primary_key.columns)
+                    upd = tbl.update().where(pkey_column == values[pkey_column.name]).values(values)
+                    txn.execute(upd)
+                    # print(f'Skipping duplicate for table {tbl.name}: {values}')
 
     def _write_assets(self,
                       asset_type,
