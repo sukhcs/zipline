@@ -188,8 +188,11 @@ def _run(handle_data,
         else:
             click.echo(algotext)
 
+    #first_trading_day = \
+    #    bundle_data.equity_minute_bar_reader.first_trading_day
+
     first_trading_day = \
-        bundle_data.equity_minute_bar_reader.first_trading_day
+        bundle_data.equity_daily_bar_reader.first_trading_day
 
     DataPortalClass = (partial(DataPortalLive, broker)
                        if broker

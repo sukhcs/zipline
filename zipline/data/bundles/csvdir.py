@@ -11,7 +11,8 @@ from trading_calendars import register_calendar_alias
 
 from zipline.utils.cli import maybe_show_progress
 
-from . import core as bundles
+from zipline.data.bundles import core as bundles
+from zipline.data.bundles.common import asset_to_sid_map
 
 handler = StreamHandler(sys.stdout, format_string=" | {record.message}")
 logger = Logger(__name__)
@@ -151,8 +152,10 @@ def csvdir_bundle(environ,
         else:
             writer = daily_bar_writer
 
+        assets_to_sids = asset_to_sid_map(asset_db_writer.asset_finder, symbols)
+
         writer.write(_pricing_iter(ddir, symbols, metadata,
-                     divs_splits, show_progress),
+                     divs_splits, show_progress, assets_to_sids = assets_to_sids),
                      show_progress=show_progress)
 
         # Hardcode the exchange to "CSVDIR" for all assets and (elsewhere)
@@ -168,11 +171,12 @@ def csvdir_bundle(environ,
                                 dividends=divs_splits['divs'])
 
 
-def _pricing_iter(csvdir, symbols, metadata, divs_splits, show_progress):
+def _pricing_iter(csvdir, symbols, metadata, divs_splits, show_progress, assets_to_sids={}):
     with maybe_show_progress(symbols, show_progress,
                              label='Loading custom pricing data: ') as it:
         files = os.listdir(csvdir)
-        for sid, symbol in enumerate(it):
+        for symbol in it:
+            sid = assets_to_sids[symbol]
             logger.debug('%s: sid %s' % (symbol, sid))
 
             try:
@@ -189,9 +193,11 @@ def _pricing_iter(csvdir, symbols, metadata, divs_splits, show_progress):
             start_date = dfr.index[0]
             end_date = dfr.index[-1]
 
+            #print(dfr)
+            #exit()
             # The auto_close date is the day after the last trade.
             ac_date = end_date + Timedelta(days=1)
-            metadata.iloc[sid] = start_date, end_date, ac_date, symbol
+            metadata.loc[sid] = start_date, end_date, ac_date, symbol
 
             if 'split' in dfr.columns:
                 tmp = 1. / dfr[dfr['split'] != 1.0]['split']

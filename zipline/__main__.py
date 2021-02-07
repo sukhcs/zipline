@@ -1,5 +1,7 @@
 import errno
 import os
+import pkgutil
+from importlib import import_module
 
 import click
 import logbook

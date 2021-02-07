@@ -1179,9 +1179,9 @@ class DataPortal(object):
         # in the adjustments db
         seconds = int(dt.value / 1e9)
 
-        splits = self._adjustment_reader.conn.execute(
-            "SELECT sid, ratio FROM SPLITS WHERE effective_date = ?",
-            (seconds,)).fetchall()
+        c = self._adjustment_reader.conn.cursor()
+        c.execute(f"SELECT sid, ratio FROM SPLITS WHERE effective_date = {seconds}")
+        splits = c.fetchall()
 
         splits = [split for split in splits if split[0] in assets]
         splits = [(self.asset_finder.retrieve_asset(split[0]), split[1])
