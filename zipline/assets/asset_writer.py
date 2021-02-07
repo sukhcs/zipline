@@ -34,10 +34,11 @@ from zipline.assets.asset_db_schema import (
     metadata,
     version_info,
 )
+from sqlalchemy.exc import IntegrityError
 from zipline.utils.compat import ExitStack
 from zipline.utils.preprocess import preprocess
 from zipline.utils.range import from_tuple, intersecting_ranges
-from zipline.utils.sqlite_utils import coerce_string_to_eng
+from zipline.utils.db_utils import coerce_string_to_eng
 
 # Define a namedtuple for use with the load_data and _load_data methods
 AssetData = namedtuple(
@@ -92,7 +93,9 @@ def _normalize_index_columns_in_place(equities,
                                (root_symbols, 'root_symbol')):
         if frame is not None and column_name in frame:
             frame.set_index(column_name, inplace=True)
-
+        if frame is not None:
+            frame.index.rename(column_name, inplace=True)
+    
 
 def _default_none(df, column):
     return None
@@ -458,7 +461,8 @@ class AssetDBWriter(object):
     DEFAULT_CHUNK_SIZE = SQLITE_MAX_VARIABLE_NUMBER
 
     @preprocess(engine=coerce_string_to_eng(require_exists=False))
-    def __init__(self, engine):
+    def __init__(self, engine, asset_finder=None):
+        self.asset_finder = asset_finder
         self.engine = engine
 
     def _real_write(self,
@@ -469,7 +473,7 @@ class AssetDBWriter(object):
                     exchanges,
                     root_symbols,
                     chunk_size):
-        with self.engine.begin() as conn:
+        with self.engine.connect() as conn:
             # Create SQL tables if they do not exist.
             self.init_db(conn)
 
@@ -660,6 +664,7 @@ class AssetDBWriter(object):
             root_symbols=root_symbols,
         )
 
+
         self._real_write(
             equities=equities,
             equity_symbol_mappings=equity_symbol_mappings,
@@ -789,6 +794,7 @@ class AssetDBWriter(object):
                 else pd.DataFrame()
             ),
         )
+
         self._real_write(
             equities=data.equities,
             equity_symbol_mappings=data.equities_mappings,
@@ -804,15 +810,35 @@ class AssetDBWriter(object):
         for column, dtype in df.dtypes.iteritems():
             if dtype.kind == 'M':
                 df[column] = _dt_to_epoch_ns(df[column])
+        try:
+            df.to_sql(
+                tbl.name,
+                txn.connection,
+                index=True,
+                index_label=first(tbl.primary_key.columns).name,
+                if_exists='append',
+                chunksize=chunk_size,
+            )
+        except:
+            df.reset_index(inplace=True)
 
-        df.to_sql(
-            tbl.name,
-            txn.connection,
-            index=True,
-            index_label=first(tbl.primary_key.columns).name,
-            if_exists='append',
-            chunksize=chunk_size,
-        )
+            for i, row in df.iterrows():
+                values = {}
+
+                for column in list(df.columns):
+                    # skip raw index, get set by backend
+                    if column == 'index':
+                        continue
+                    values[column] = row[column]
+
+                try:
+                    ins = tbl.insert().values(values)
+                    txn.execute(ins)
+                except IntegrityError:
+                    pkey_column = first(tbl.primary_key.columns)
+                    upd = tbl.update().where(pkey_column == values[pkey_column.name]).values(values)
+                    txn.execute(upd)
+                    # print(f'Skipping duplicate for table {tbl.name}: {values}')
 
     def _write_assets(self,
                       asset_type,
@@ -829,14 +855,6 @@ class AssetDBWriter(object):
             tbl = equities_table
             if mapping_data is None:
                 raise TypeError('mapping data required for equities')
-            # write the symbol mapping data.
-            self._write_df_to_table(
-                equity_symbol_mappings,
-                mapping_data,
-                txn,
-                chunk_size,
-            )
-
         else:
             raise ValueError(
                 "asset_type must be in {'future', 'equity'}, got: %s" %
@@ -845,16 +863,23 @@ class AssetDBWriter(object):
 
         self._write_df_to_table(tbl, assets, txn, chunk_size)
 
-        pd.DataFrame({
+        # if repeated but we need to write data to equities-table first,
+        # otherwise we'll fail because of non-matched constraints
+        if asset_type == 'equity':
+            # write the symbol mapping data.
+            self._write_df_to_table(
+                equity_symbol_mappings,
+                mapping_data,
+                txn,
+                chunk_size,
+            )
+
+        router_df = pd.DataFrame({
             asset_router.c.sid.name: assets.index.values,
             asset_router.c.asset_type.name: asset_type,
-        }).to_sql(
-            asset_router.name,
-            txn.connection,
-            if_exists='append',
-            index=False,
-            chunksize=chunk_size
-        )
+        })
+
+        self._write_df_to_table(asset_router, router_df, txn, chunk_size)
 
     def _all_tables_present(self, txn):
         """
@@ -892,7 +917,7 @@ class AssetDBWriter(object):
         """
         with ExitStack() as stack:
             if txn is None:
-                txn = stack.enter_context(self.engine.begin())
+                txn = stack.enter_context(self.engine.connect())
 
             tables_already_exist = self._all_tables_present(txn)
 
@@ -939,6 +964,7 @@ class AssetDBWriter(object):
                     'auto_close_date'):
             equities_output[col] = _dt_to_epoch_ns(equities_output[col])
 
+        equities_output.index.rename('sid', inplace=True)
         return _split_symbol_mappings(equities_output, exchanges)
 
     def _normalize_futures(self, futures):
@@ -968,6 +994,7 @@ class AssetDBWriter(object):
         for col in ('start_date', 'end_date'):
             mappings_output[col] = _dt_to_epoch_ns(mappings_output[col])
 
+        mappings_output.index.rename('sid', inplace=True)
         return mappings_output
 
     def _load_data(self,

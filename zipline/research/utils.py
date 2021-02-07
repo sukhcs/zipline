@@ -5,7 +5,6 @@ from zipline.data import bundles
 import dateutil.parser
 import pandas_datareader.data as yahoo_reader
 
-
 from zipline.pipeline.loaders import USEquityPricingLoader
 from zipline.data.data_portal import DataPortal
 from zipline.utils.calendars import get_calendar
@@ -49,6 +48,7 @@ def create_data_portal(_bundle_name, _trading_calendar, start_date):
 def get_pricing(data_portal, trading_calendar, assets, start_date, end_date, field='close'):
     # Set the given start and end dates to Timestamps. The frequency string C is used to
     # indicate that a CustomBusinessDay DateOffset is used
+
     global END_DT
     END_DT = pd.Timestamp(end_date, tz='UTC', freq='C')
     start_dt = pd.Timestamp(start_date, tz='UTC', freq='C')
@@ -152,4 +152,3 @@ def get_benchmark(symbol=None, start: DATE = None, end: DATE = None, other_file_
                                  pd.Timestamp(DATE(end)))['Close']
     bm.index = bm.index.tz_localize('UTC')
     return bm.pct_change(periods=1).fillna(0)
-
