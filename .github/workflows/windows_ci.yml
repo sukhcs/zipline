@@ -36,7 +36,7 @@ jobs:
         C:\Miniconda\condabin\conda.bat init powershell
     - name: Install scientific python requirements
       run: |
-        conda create -y --name test python=${{matrix.python-version}} pip pandas=1.1.5 numpy=1.19.4 scipy=1.5.0 cython=0.29.21
+        conda create -y --name test python=${{matrix.python-version}} pip pandas numpy scipy cython=0.29.21
 #    - name: Install TA lib
 #      run: |
 #        conda activate test
