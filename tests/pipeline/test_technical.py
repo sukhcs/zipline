@@ -178,6 +178,7 @@ class TestFastStochasticOscillator(ZiplineTestCase):
         # Expected %K
         assert_equal(out, np.full((3,), 200, dtype=np.float64))
 
+    @unittest.skip
     @parameter_space(seed=range(5))
     def test_fso_expected_with_talib(self, seed):
         """
