@@ -17,8 +17,8 @@ multipledispatch>=0.6.0
 toolz>=0.8.2
 
 # Scientific Libraries
-numpy==1.20.1
-pandas==1.1.5
+numpy
+pandas
 
 
 pandas-datareader>=0.9.0

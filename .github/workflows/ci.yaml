@@ -45,10 +45,10 @@ jobs:
 #      if: matrix.python-version == 3.5
 #      run: |
 #        echo "PIP_CONSTRAINT=etc/requirements_locked.txt" >> $GITHUB_ENV
-#    - name: Set Lockfile py36
-#      if: matrix.python-version == 3.6
-#      run: |
-#        echo "PIP_CONSTRAINT=etc/requirements_py36_locked.txt" >> $GITHUB_ENV
+    - name: install packages for py36
+      if: matrix.python-version == 3.6
+      run: |
+        conda create -y --name test python=${{matrix.python-version}} pip pandas=1.1.5 numpy=1.19.5 scipy=1.5.0 cython=0.29.21
 
     - name: Get pip cache dir
       id: pip-cache
