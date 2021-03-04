@@ -281,7 +281,7 @@ class DataPortal(object):
             prefetch_length=minute_history_prefetch_length,
         )
 
-        self._first_trading_day = first_trading_day
+        self._first_trading_day = str(first_trading_day.date())
 
         # Get the first trading minute
         self._first_trading_minute, _ = (
@@ -776,7 +776,7 @@ class DataPortal(object):
         start_loc = end_loc - bar_count + 1
         if start_loc < self._first_trading_day_loc:
             raise HistoryWindowStartsBeforeData(
-                first_trading_day=self._first_trading_day.date(),
+                first_trading_day=self._first_trading_day,
                 bar_count=bar_count,
                 suggested_start_day=tds[
                     self._first_trading_day_loc + bar_count
@@ -878,7 +878,7 @@ class DataPortal(object):
         )
 
         raise HistoryWindowStartsBeforeData(
-            first_trading_day=self._first_trading_day.date(),
+            first_trading_day=self._first_trading_day,
             bar_count=bar_count,
             suggested_start_day=suggested_start_day.date(),
         )
