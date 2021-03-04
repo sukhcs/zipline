@@ -27,6 +27,7 @@ Installing the cutting edge version, directly from the master branch. Just remem
 Using the Master branch install is for the more advanced users.
  * git clone https://github.com/shlomikushchi/zipline-trader.git
  * <create/activate a virtual env> - optional but recommended
+ * python -m pip install --upgrade pip
  * pip install -e .
 
 The last step will install this project from source, giving you the ability to debug zipline-trader's code.
@@ -37,12 +38,14 @@ You can install it with ability to debug it like this:
 
 .. code-block:: bash
 
+    python -m pip install --upgrade pip
     pip install -e git://github.com/shlomikushchi/zipline-trader.git#egg=zipline-trader
 
 To install a specific version, you could do this (installing version 1.5.0):
 
 .. code-block:: bash
 
+    python -m pip install --upgrade pip
     pip install -e git://github.com/shlomikushchi/zipline-trader.git@1.5.0#egg=zipline-trader
 
 
