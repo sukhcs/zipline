@@ -50,6 +50,11 @@ jobs:
       run: |
         conda create -y --name test python=${{matrix.python-version}} pip pandas numpy scipy cython=0.29.21
 
+    - name: install packages for py37
+      if: matrix.python-version == 3.7
+      run: |
+        conda create -y --name test python=${{matrix.python-version}} pip pandas=1.1.5 numpy=1.19.5 scipy=1.4.1 cython=0.29.21
+
     - name: Get pip cache dir
       id: pip-cache
       run: |
