@@ -68,7 +68,7 @@ jobs:
     - name: install pandas 1.1.5 for py37
       if: matrix.python-version == 3.7
       run: |
-        conda create -y --name test python=${{matrix.python-version}} pip pandas=1.1.5 numpy scipy cython=0.29.21
+        pip install pandas=1.1.5
     - name: Run tests
       run: |
         nosetests tests
