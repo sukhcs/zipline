@@ -5,7 +5,7 @@ from functools import partial
 
 import itertools
 from nose.tools import assert_true
-from nose_parameterized import parameterized
+from parameterized import parameterized
 import numpy as np
 from numpy.testing import assert_array_equal, assert_almost_equal
 import pandas as pd

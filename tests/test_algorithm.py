@@ -23,7 +23,7 @@ from copy import deepcopy
 import logbook
 import toolz
 from logbook import TestHandler, WARNING
-from nose_parameterized import parameterized
+from parameterized import parameterized
 from six import iteritems, itervalues, string_types
 from six.moves import range
 from testfixtures import TempDirectory
@@ -4309,7 +4309,7 @@ class TestOrderAfterDelist(zf.WithMakeAlgo, zf.ZiplineTestCase):
     # FakeDataPortal with different mock data.
     def init_instance_fixtures(self):
         super(TestOrderAfterDelist, self).init_instance_fixtures()
-        self.data_portal = FakeDataPortal(self.asset_finder)
+        self.data_portal = FakeDataPortal(self.asset_finder, first_trading_day=self.start)
 
     @parameterized.expand([
         ('auto_close_after_end_date', 1),

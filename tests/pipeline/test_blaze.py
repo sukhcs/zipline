@@ -14,7 +14,7 @@ from unittest import skipIf
 import warnings
 if platform.system() != 'Windows':
     from datashape import dshape, var, Record
-from nose_parameterized import parameterized
+from parameterized import parameterized
 import numpy as np
 from numpy.testing.utils import assert_array_almost_equal
 if platform.system() != 'Windows':
