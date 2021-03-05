@@ -49,12 +49,6 @@ jobs:
       if: matrix.python-version == 3.6
       run: |
         conda create -y --name test python=${{matrix.python-version}} pip pandas numpy scipy cython=0.29.21
-
-    - name: install packages for py37
-      if: matrix.python-version == 3.7
-      run: |
-        conda create -y --name test python=${{matrix.python-version}} pip pandas=1.1.5 numpy scipy cython=0.29.21
-
     - name: Get pip cache dir
       id: pip-cache
       run: |
@@ -71,6 +65,10 @@ jobs:
         python -m pip install wheel
         python -m pip install -r etc/requirements_build.in
         python -m pip install --no-binary=bcolz -e .[all] -r etc/requirements_blaze.in
+    - name: install pandas 1.1.5 for py37
+      if: matrix.python-version == 3.7
+      run: |
+        conda create -y --name test python=${{matrix.python-version}} pip pandas=1.1.5 numpy scipy cython=0.29.21
     - name: Run tests
       run: |
         nosetests tests
