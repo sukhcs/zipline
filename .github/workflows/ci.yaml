@@ -67,6 +67,5 @@ jobs:
         python -m pip install -r etc/requirements_build.in
         python -m pip install --no-binary=bcolz -e .[all] -r etc/requirements_blaze.in
     - name: Run tests
-      if: matrix.python-version == 3.6
       run: |
         nosetests tests
