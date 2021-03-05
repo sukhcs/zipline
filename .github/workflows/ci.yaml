@@ -18,7 +18,7 @@ jobs:
       matrix:
 #        os: [ubuntu-latest, macos-latest]
         os: [ubuntu-latest]
-        python-version: [3.6]
+        python-version: [3.6, 3.7]
     steps:
     - uses: actions/checkout@v2
       with:
@@ -45,11 +45,10 @@ jobs:
 #      if: matrix.python-version == 3.5
 #      run: |
 #        echo "PIP_CONSTRAINT=etc/requirements_locked.txt" >> $GITHUB_ENV
-#    - name: Set Lockfile py36
-#      if: matrix.python-version == 3.6
-#      run: |
-#        echo "PIP_CONSTRAINT=etc/requirements_py36_locked.txt" >> $GITHUB_ENV
-
+    - name: install packages for py36
+      if: matrix.python-version == 3.6
+      run: |
+        conda create -y --name test python=${{matrix.python-version}} pip pandas numpy scipy cython=0.29.21
     - name: Get pip cache dir
       id: pip-cache
       run: |
@@ -66,6 +65,11 @@ jobs:
         python -m pip install wheel
         python -m pip install -r etc/requirements_build.in
         python -m pip install --no-binary=bcolz -e .[all] -r etc/requirements_blaze.in
+    - name: install pandas 1.1.5 for py37
+      if: matrix.python-version == 3.7
+      run: |
+        pip install pandas==1.1.5
     - name: Run tests
+      if: matrix.python-version == 3.6
       run: |
         nosetests tests

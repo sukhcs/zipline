@@ -3,7 +3,11 @@ Install
 | Please use python 3.6 and let's avoid unnecessary issues.
 | Current stable version is 1.5.0. please install that and avoid the master branch (requires some maintenance. will be updated once done) 
 | Linux and Windows Installations are automatically tested. Mac OS users might have an issue with Bcolz.
-  For now, refer to the original zipline docs if you do. Fixing this issue is in the backlog.
+  Users have found that the easiest way to get Bcolz installed is using conda like so:
+  .. code-block:: bash
+
+     conda install -c conda-forge bcolz
+
 | If you use Python for anything other than Zipline, I **strongly** recommend
   that you install in a `virtualenv
 <https://virtualenv.readthedocs.org/en/latest>`_.
@@ -14,10 +18,17 @@ The `Hitchhiker's Guide to Python`_ provides an `excellent tutorial on virtualen
 
 For now I support only installation through github. You could do that in one of these ways:
 
+Installing from pypi
+---------------------
+The stable version is available on pypi (currently 1.5.0).
+
 Installing with git clone
 --------------------------
+Installing the cutting edge version, directly from the master branch. Just remember that documentation is not always up to date with latest and greatest.
+Using the Master branch install is for the more advanced users.
  * git clone https://github.com/shlomikushchi/zipline-trader.git
  * <create/activate a virtual env> - optional but recommended
+ * python -m pip install --upgrade pip
  * pip install -e .
 
 The last step will install this project from source, giving you the ability to debug zipline-trader's code.
@@ -28,21 +39,16 @@ You can install it with ability to debug it like this:
 
 .. code-block:: bash
 
+    python -m pip install --upgrade pip
     pip install -e git://github.com/shlomikushchi/zipline-trader.git#egg=zipline-trader
 
 To install a specific version, you could do this (installing version 1.5.0):
 
 .. code-block:: bash
 
+    python -m pip install --upgrade pip
     pip install -e git://github.com/shlomikushchi/zipline-trader.git@1.5.0#egg=zipline-trader
 
-Installing from pypi (coming soon)
------------------------------------
-The most known way of installing would be installing from pypi:
-
-.. code-block:: bash
-
-    pip install zipline-trader
 
 * Installing using Anaconda (Probably supported in the future)
 
