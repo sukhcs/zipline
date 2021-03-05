@@ -70,5 +70,6 @@ jobs:
       run: |
         pip install pandas==1.1.5
     - name: Run tests
+      if: matrix.python-version == 3.6
       run: |
         nosetests tests
