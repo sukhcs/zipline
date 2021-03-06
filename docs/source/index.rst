@@ -6,6 +6,7 @@
    :maxdepth: 1
 
    install
+   configuration-file
    alpaca-bundle-ingestion
    research
    backtest
