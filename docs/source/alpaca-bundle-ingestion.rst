@@ -41,10 +41,11 @@ How To Use It
 
   .. code-block:: yaml
 
-    key_id: "<YOUR-KEY>"
-    secret: "<YOUR-SECRET>"
-    base_url: https://paper-api.alpaca.markets
-    custom_asset_list: AAPL, TSLA, GOOG
+    alpaca:
+      key_id: "<YOUR-KEY>"
+      secret: "<YOUR-SECRET>"
+      base_url: https://paper-api.alpaca.markets
+      custom_asset_list: AAPL, TSLA, GOOG
   ..
 
   Please note that:
