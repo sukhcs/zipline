@@ -11,6 +11,7 @@
    research
    backtest
    going-live
+   database-backend
    troubleshoot
    zipline-docs
 
