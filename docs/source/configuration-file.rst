@@ -43,10 +43,6 @@ Sample Config file
       AV_CALLS_PER_FREQ: 5
       AV_TOLERANCE_SEC: 1
 
-    binance:
-      key_id: "<YOUR-KEY>"
-      secret: "<YOUR-SECRET>"
-
     backend:
       type: postgres
       postgres:
