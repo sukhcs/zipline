@@ -99,7 +99,8 @@ Notes
 * This data doesn't include Fundamental data, only price data so we'll need to handle it separately.
 
 Tutorial Video
-=====================
+----------------
+
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube.com/embed/xZRbaf0641U"
