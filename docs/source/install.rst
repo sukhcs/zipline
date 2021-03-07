@@ -64,7 +64,7 @@ To install a specific version, you could do this (installing version 1.6.0):
 .. code-block:: bash
 
     python -m pip install --upgrade pip
-    pip install -e git://github.com/shlomikushchi/zipline-trader.git@1.5.0#egg=zipline-trader
+    pip install -e git://github.com/shlomikushchi/zipline-trader.git@1.6.0#egg=zipline-trader
 
 
 The last step will install this project from source, giving you the ability to debug zipline-trader's code.
