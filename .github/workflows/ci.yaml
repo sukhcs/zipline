@@ -26,10 +26,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install TA lib (ubuntu)
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          wget https://s3.amazonaws.com/quantopian-orchestration/packages/ta-lib-0.4.0-src.tar.gz
-          python3 -m pip install ta-lib-0.4.0-src.tar.gz
+      run: |
+        wget https://s3.amazonaws.com/quantopian-orchestration/packages/ta-lib-0.4.0-src.tar.gz
+        python3 -m pip install ta-lib-0.4.0-src.tar.gz
     - name: Install requirements
       env:
         DISABLE_BCOLZ_AVX2: true
