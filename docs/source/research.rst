@@ -48,7 +48,7 @@ Loading Your Data Bundle
 
 .. raw:: html
 
-    <iframe width="660" height="315" src="https://www.youtube.com/embed/AeLzhmlqxm0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <iframe width="660" height="315" src="https://www.youtube.com/embed/AYLUDCBmqB4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Simple Pipeline
 --------------------------
@@ -56,6 +56,10 @@ Simple Pipeline
   you could see hwo to create a simple pipeline and get the data:  `Simple Pipeline`_.
 
 .. _Simple Pipeline: notebooks/SimplePipeline.ipynb
+
+.. raw:: html
+
+    <iframe width="660" height="315" src="https://www.youtube.com/embed/BIIHtP0m5xk" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 
 Factors and Alphalens
@@ -78,6 +82,9 @@ Sector Classifier
 
 .. _Alphalens Example: notebooks/Alphalens.ipynb
 
+.. raw:: html
+
+    <iframe width="660" height="315" src="https://www.youtube.com/embed/8P34shf0dqY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Run and analyze a backtest
 --------------------------
@@ -88,6 +95,9 @@ Run and analyze a backtest
 
 .. _Bactesting: notebooks/backtest.ipynb
 
+.. raw:: html
+
+    <iframe width="660" height="315" src="https://www.youtube.com/embed/BIIHtP0m5xk" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 .. _`pyfolio` : https://github.com/quantopian/pyfolio
 .. _`Alphalens` : https://github.com/quantopian/alphalens
