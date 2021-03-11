@@ -70,8 +70,7 @@ jobs:
         python -m pip install wheel
         python -m pip install -r etc/requirements_build.in
         python -m pip install -r etc/requirements_dev.in
-#        python -m pip install -r etc/requirements.in
-        python -m pip install -e
+        python -m pip install -e .
     - name: install pandas 1.1.5 for py37
       if: matrix.python-version == 3.7
       run: |
