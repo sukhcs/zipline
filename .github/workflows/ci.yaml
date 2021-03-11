@@ -69,6 +69,7 @@ jobs:
       run: |
         python -m pip install wheel
         python -m pip install -r etc/requirements_build.in
+        python -m pip install -r etc/requirements_dev.in
 #        python -m pip install --no-binary=bcolz -e .[all] -r etc/requirements_blaze.in
     - name: install pandas 1.1.5 for py37
       if: matrix.python-version == 3.7
