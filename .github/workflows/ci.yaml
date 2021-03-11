@@ -64,11 +64,11 @@ jobs:
       env:
         DISABLE_BCOLZ_AVX2: true
       run: |
-        conda activate test
+        conda init bash
         conda install -c conda-forge bcolz=1.2.1
     - name: Install requirements
       run: |
-        conda activate test
+        conda init bash
         python -m pip install wheel
         python -m pip install -r etc/requirements_build.in
         python -m pip install -r etc/requirements_dev.in
