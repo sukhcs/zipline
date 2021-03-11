@@ -45,16 +45,12 @@ jobs:
 #      if: matrix.python-version == 3.5
 #      run: |
 #        echo "PIP_CONSTRAINT=etc/requirements_locked.txt" >> $GITHUB_ENV
-    - name: install packages for py36
-      if: matrix.python-version == 3.6
+    - name: Install requirements
       env:
         DISABLE_BCOLZ_AVX2: true
       run: |
-        conda create -y --name test python=${{matrix.python-version}} pip pandas numpy scipy cython=0.29.21
-    - name: Install requirements
-      run: |
+        python3 -m pip install pandas numpy scipy cython=0.29.21 bcolz==1.2.1
         python3 -m pip install wheel
-        python3 -m pip install bcolz==1.2.1
         python3 -m pip install -r etc/requirements_build.in
         python3 -m pip install -r etc/requirements_dev.in
         python3 -m pip install -e .
