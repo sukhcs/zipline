@@ -25,6 +25,11 @@ jobs:
       uses: actions/setup-python@v2  # use latest v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install TA lib (ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          wget https://s3.amazonaws.com/quantopian-orchestration/packages/ta-lib-0.4.0-src.tar.gz
+          python3 -m pip install ta-lib-0.4.0-src.tar.gz
     - name: Install requirements
       env:
         DISABLE_BCOLZ_AVX2: true
@@ -36,16 +41,6 @@ jobs:
         python3 -m pip install -r etc/requirements_dev.in
         python3 -m pip install -r etc/requirements_blaze.in
         python3 -m pip install -e .
-    - name: Install TA lib (ubuntu)
-      if: startsWith(matrix.os, 'ubuntu')
-      run: |
-        wget https://s3.amazonaws.com/quantopian-orchestration/packages/ta-lib-0.4.0-src.tar.gz
-        tar xvfz ta-lib-0.4.0-src.tar.gz
-        cd ta-lib
-        ./configure
-        make
-        sudo make install
-        sudo ldconfig
     - name: install pandas 1.1.5 for py37
       if: matrix.python-version == 3.7
       run: |
