@@ -28,6 +28,12 @@ Install
 | If you use Python for anything other than Zipline, I **strongly** recommend
   that you install in a `virtualenv <https://virtualenv.readthedocs.org/en/latest>`_.
 
+| When using postgres, some users had difficulties installing ``psyccopg2``. A workaround is installing it manually prior to zt
+
+.. code-block:: bash
+
+    conda install -c conda-forge psycopg2=2.8.6
+
 The `Hitchhiker's Guide to Python`_ provides an `excellent tutorial on virtualenv
 <https://docs.python-guide.org/en/latest/dev/virtualenvs/>`_.
 
