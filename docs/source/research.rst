@@ -13,6 +13,18 @@ Research & backtesting in the Notebook environment
 
     jupyter notebook
 
+| You might need to add the jupyter kernel to be able to work with your virtual environment.
+| This should get it working, and search online if you face issue:
+
+.. code-block:: sh
+
+    pip install ipykernel
+    python -m ipykernel install --user --name zipline-trader
+
+.. raw:: html
+
+    <iframe width="660" height="315" src="https://www.youtube.com/embed/mPgQvEVAoOA" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 Working With The Research Environment
 -----------------------------------------
 | This was one of Quantopian's strengths and now you could run it locally too.
@@ -33,6 +45,10 @@ Loading Your Data Bundle
 .. _Load Data Bundle: notebooks/LoadDataBundle.ipynb
 
 .. _`Jupyter.org` : https://jupyter.org/install
+
+.. raw:: html
+
+    <iframe width="660" height="315" src="https://www.youtube.com/embed/AeLzhmlqxm0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Simple Pipeline
 --------------------------
