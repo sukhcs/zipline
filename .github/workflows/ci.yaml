@@ -67,4 +67,4 @@ jobs:
       if: matrix.python-version == 3.6
       run: |
         conda init bash
-        python -m nosetests tests
+        nosetests tests
