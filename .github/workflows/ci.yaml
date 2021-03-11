@@ -54,6 +54,7 @@ jobs:
     - name: Install requirements
       run: |
         conda init bash
+        conda activate test
         python -m pip install wheel
         python -m pip install -r etc/requirements_build.in
         python -m pip install -r etc/requirements_dev.in
@@ -65,4 +66,6 @@ jobs:
     - name: Run tests
       if: matrix.python-version == 3.6
       run: |
+        conda init bash
+        conda activate test
         nosetests tests
