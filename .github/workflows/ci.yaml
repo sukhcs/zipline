@@ -10,7 +10,7 @@ on:
       - master
 
 jobs:
-  build-and-test:
+  build-and-test-ubuntu:
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -47,25 +47,10 @@ jobs:
 #        echo "PIP_CONSTRAINT=etc/requirements_locked.txt" >> $GITHUB_ENV
     - name: install packages for py36
       if: matrix.python-version == 3.6
-      run: |
-        conda create -y --name test python=${{matrix.python-version}} pip pandas numpy scipy cython=0.29.21
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-    - name: pip cache
-      uses: actions/cache@v2
-      with:
-        path: ${{ steps.pip-cache.outputs.dir }}
-        key: ${{ runner.os }}-pip-py${{matrix.python-version}}-${{ hashFiles(env.PIP_CONSTRAINT) }}
-        restore-keys: |
-          ${{ runner.os }}-pip-py${{matrix.python-version}}-
-    - name: Install bcolz
       env:
         DISABLE_BCOLZ_AVX2: true
       run: |
-        conda init bash
-        conda install -c conda-forge bcolz=1.2.1
+        conda create -y --name test python=${{matrix.python-version}} pip pandas numpy scipy cython=0.29.21 bcolz=1.2.1
     - name: Install requirements
       run: |
         conda init bash
