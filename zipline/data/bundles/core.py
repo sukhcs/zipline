@@ -97,11 +97,11 @@ def asset_db_relative(bundle_name, timestr, db_version=None):
 
 
 def external_db_path(bundle_name, environ):
-    import config.data_backend
+    import zipline.config.data_backend
     path = None
-    if config.data_backend.db_backend_configured():
-        if config.data_backend.db_backend_configured() == 'postgres':
-            db = config.data_backend.PostgresDB()
+    if zipline.config.data_backend.db_backend_configured():
+        if zipline.config.data_backend.db_backend_configured() == 'postgres':
+            db = zipline.config.data_backend.PostgresDB()
             host = db.host
             port = db.port
             user = db.user

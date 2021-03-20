@@ -26,7 +26,7 @@ from trading_calendars import TradingCalendar
 
 from ratelimit import limits, sleep_and_retry
 
-import config
+import zipline.config
 from zipline.data.bundles import core as bundles
 from zipline.data.bundles.common import asset_to_sid_map
 from zipline.data.bundles.universe import Universe, get_sp500, get_sp100, get_nasdaq100, all_alpaca_assets
@@ -36,9 +36,7 @@ import trading_calendars
 import os
 import time
 
-from zipline.errors import SymbolNotFound, SidsNotFound
-
-av_config = config.bundle.AlphaVantage()
+av_config = zipline.config.bundle.AlphaVantage()
 AV_FREQ_SEC = av_config.sample_frequency
 AV_CALLS_PER_FREQ = av_config.max_calls_per_freq
 AV_TOLERANCE_SEC = av_config.breathing_space

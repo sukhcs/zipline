@@ -16,7 +16,7 @@ from functools import partial
 import psycopg2
 import sqlalchemy as sa
 
-import config.data_backend
+import zipline.config.data_backend
 from zipline.utils.db_utils import check_and_create_engine
 import pandas as pd
 
@@ -43,7 +43,7 @@ from zipline.data.bar_reader import (
 )
 from zipline.utils.functional import apply
 from zipline.utils.input_validation import expect_element
-from zipline.utils.numpy_utils import iNaT, float64_dtype, uint32_dtype
+from zipline.utils.numpy_utils import float64_dtype
 from zipline.utils.memoize import lazyval
 from zipline.utils.cli import maybe_show_progress
 from ._equities import _compute_row_slices, _read_tape_data
@@ -530,7 +530,7 @@ class PSQLDailyBarWriter(object):
         create the bundle database. it will have the name of the bundle
         :param db_path: expected db path (table). used to get the bundle name.
         """
-        db_config = config.data_backend.PostgresDB()
+        db_config = zipline.config.data_backend.PostgresDB()
         host = db_config.host
         port = db_config.port
         user = db_config.user
