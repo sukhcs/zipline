@@ -41,7 +41,7 @@ python-dateutil>=2.4.2
 requests>=2.9.1
 
 # Asset writer and finder
-sqlalchemy>=1.0.8
+sqlalchemy>=1.0.8,<1.4.0
 # For asset db management
 alembic>=0.7.7
 
