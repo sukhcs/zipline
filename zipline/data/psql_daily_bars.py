@@ -711,7 +711,7 @@ class PSQLDailyBarWriter(object):
         return val
 
     @expect_element(invalid_data_behavior={'warn', 'raise', 'ignore'})
-    def _write_to_postgres(self, sid, data, invalid_data_behavior):
+    def _write_to_postgres(self, sid, data: pd.DataFrame, invalid_data_behavior):
 
         result = self._format_df_columns_and_index(data, sid)
         if not result.empty:
@@ -790,7 +790,7 @@ class PSQLDailyBarWriter(object):
         )
         return edge_days
 
-    def _format_df_columns_and_index(self, data, sid):
+    def _format_df_columns_and_index(self, data: pd.DataFrame, sid):
         """
         make sure that the data received is in the structure we expect columns and index wise.
         :param data: data from data bundle
