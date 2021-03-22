@@ -748,7 +748,7 @@ class PSQLDailyBarWriter(object):
         # sessions (sessions on the edge of the data and the slice)
         consistent_data = True
         if not before_slice.empty:
-            backward_gap = len(self._calendar.sessions_in_range(before_slice.index[-1], first_day))
+            backward_gap = len(self._calendar.sessions_in_range(before_slice.index[-1].tz_localize(None), first_day))
             if backward_gap != 2:
                 # max allowed gap for consistent data is 2
                 logger.warning(f"data for {sid} contains backward gaps {backward_gap} "
