@@ -153,6 +153,7 @@ def av_get_data_for_symbol(symbol, start, end, interval):
         df.index = pd.to_datetime(df['date'])
         df.index = df.index.tz_localize('UTC')
         df.drop(columns=['date'], inplace=True)
+        df.sort_index(inplace=True)
 
     else:
         data = av_api_wrapper(symbol, interval)
@@ -172,10 +173,9 @@ def av_get_data_for_symbol(symbol, start, end, interval):
             '8. split coefficient': 'split'
         }, inplace=True)
 
+        df.sort_index(inplace=True)
         # fill potential gaps in data
         df = fill_daily_gaps(df)
-
-    df.sort_index(inplace=True)
 
     # data comes as strings
     df['open'] = pd.to_numeric(df['open'], downcast='float')
@@ -344,7 +344,6 @@ def api_to_bundle(interval=['1m']):
 
         metadata = metadata_df(assets_to_sids)
 
-        assets = list_assets()
         for _interval in interval:
             if _interval == '1d':
                 daily_bar_writer.write(daily_data_generator(), assets=assets_to_sids.values(), show_progress=True,
