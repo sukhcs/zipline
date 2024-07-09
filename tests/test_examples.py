@@ -16,6 +16,13 @@ from functools import partial
 from operator import itemgetter
 import tarfile
 
+
+import platform
+import unittest
+if platform.system() == 'Windows':
+    unittest.skip("Don't run on Windows")
+
+
 import matplotlib
 import pandas as pd
 
@@ -35,12 +42,17 @@ from zipline.utils.cache import dataframe_cache
 _multiprocess_can_split_ = False
 
 matplotlib.use('Agg')
+import platform
+import unittest
 
-EXAMPLE_MODULES = examples.load_example_modules()
 
-
+@unittest.skipIf(platform.system() == 'Windows', "Don't run test on windows")
 class ExamplesTests(WithTmpDir, ZiplineTestCase):
     # some columns contain values with unique ids that will not be the same
+    if platform.system() != 'Windows':
+        EXAMPLE_MODULES = examples.load_example_modules()
+    else:
+        EXAMPLE_MODULES = {}
 
     @classmethod
     def init_class_fixtures(cls):
@@ -78,13 +90,14 @@ class ExamplesTests(WithTmpDir, ZiplineTestCase):
             ] = 0.0
         return expected_perf
 
+    @unittest.skipIf(platform.system() == 'Windows', "Don't run test on windows")
     @parameter_space(
         example_name=sorted(EXAMPLE_MODULES),
         benchmark_returns=[read_checked_in_benchmark_data(), None]
     )
     def test_example(self, example_name, benchmark_returns):
         actual_perf = examples.run_example(
-            EXAMPLE_MODULES,
+            self.EXAMPLE_MODULES,
             example_name,
             # This should match the invocation in
             # zipline/tests/resources/rebuild_example_data

@@ -215,7 +215,10 @@ def read_requirements(path,
 
 
 def install_requires(conda_format=False):
-    return read_requirements('etc/requirements.in', conda_format=conda_format)
+    if sys.platform == "win32":
+        return read_requirements('etc/requirements.in', conda_format=conda_format) + read_requirements('etc/requirements_bcolz.in', conda_format=conda_format)
+    else:
+        return read_requirements('etc/requirements.in', conda_format=conda_format)
 
 
 def extras_requires(conda_format=False):
@@ -263,8 +266,8 @@ if 'sdist' in sys.argv:
 
 
 setup(
-    name='zipline',
-    url="https://zipline.io",
+    name='zipline-trader',
+    url="https://github.com/shlomikushchi/zipline-trader",
     version=versioneer.get_version(),
     cmdclass=LazyBuildExtCommandClass(versioneer.get_cmdclass()),
     description='A backtester for financial algorithms.',
@@ -273,8 +276,9 @@ setup(
             'zipline = zipline.__main__:main',
         ],
     },
-    author='Quantopian Inc.',
-    author_email='opensource@quantopian.com',
+    author='zipline-live community',
+    author_email='',
+    maintainer='Shlomi Kushchi',
     packages=find_packages(include=['zipline', 'zipline.*']),
     ext_modules=ext_modules,
     include_package_data=True,

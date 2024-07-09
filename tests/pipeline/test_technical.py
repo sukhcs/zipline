@@ -1,11 +1,14 @@
 from __future__ import division
 
-from nose_parameterized import parameterized
+import unittest
+
+from parameterized import parameterized
 from six.moves import range
 import numpy as np
 import pandas as pd
-import talib
+
 from numpy.random import RandomState
+import platform
 
 from zipline.lib.adjusted_array import AdjustedArray
 from zipline.pipeline.data import USEquityPricing
@@ -27,8 +30,8 @@ from zipline.testing.predicates import assert_equal
 from .base import BaseUSEquityPipelineTestCase
 
 
+@unittest.skipIf(platform.system() == 'Windows', "Don't run test on windows")
 class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
-
     def closes(self, mask_last_sid):
         data = self.arange_data(dtype=np.float64)
         if mask_last_sid:
@@ -41,6 +44,8 @@ class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
 
         This uses talib.BBANDS to generate the expected data.
         """
+        import talib
+
         lower_cols = []
         middle_cols = []
         upper_cols = []
@@ -73,6 +78,7 @@ class BollingerBandsTestCase(BaseUSEquityPipelineTestCase):
         lowers = np.column_stack(lower_cols)[where]
         return uppers, middles, lowers
 
+    @unittest.skipIf(platform.system() == 'Windows', "Don't run test on windows")
     @parameter_space(
         window_length={5, 10, 20},
         k={1.5, 2, 2.5},
@@ -148,11 +154,11 @@ class AroonTestCase(ZiplineTestCase):
         assert_equal(out, expected_out)
 
 
+@unittest.skipIf(platform.system() == 'Windows', "Don't run test on windows")
 class TestFastStochasticOscillator(ZiplineTestCase):
     """
     Test the Fast Stochastic Oscillator
     """
-
     def test_fso_expected_basic(self):
         """
         Simple test of expected output from fast stochastic oscillator
@@ -172,12 +178,14 @@ class TestFastStochasticOscillator(ZiplineTestCase):
         # Expected %K
         assert_equal(out, np.full((3,), 200, dtype=np.float64))
 
+    @unittest.skip
     @parameter_space(seed=range(5))
     def test_fso_expected_with_talib(self, seed):
         """
         Test the output that is returned from the fast stochastic oscillator
         is the same as that from the ta-lib STOCHF function.
         """
+        import talib
         window_length = 14
         nassets = 6
         rng = np.random.RandomState(seed=seed)

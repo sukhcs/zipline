@@ -1,13 +1,14 @@
 import sys
 import os
 
-from zipline import __version__ as version
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../../'))
+# from zipline import __version__ as version
+
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -17,6 +18,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
+    'nbsphinx'
 ]
 
 
@@ -40,11 +42,12 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Zipline'
+project = u'Zipline Trader'
 copyright = u'2020, Quantopian Inc.'
 
 # The full version, including alpha/beta/rc tags, but excluding the commit hash
-version = release = version.split('+', 1)[0]
+# version = release = version.split('+', 1)[0]
+version = release = "1.6.0"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

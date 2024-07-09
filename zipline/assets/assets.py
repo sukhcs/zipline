@@ -26,7 +26,10 @@ import numpy as np
 import pandas as pd
 from pandas import isnull
 from six import with_metaclass, string_types, viewkeys, iteritems
+
 import sqlalchemy as sa
+from sqlalchemy.sql import text
+
 from toolz import (
     compose,
     concat,
@@ -76,7 +79,7 @@ from zipline.utils.functional import invert
 from zipline.utils.memoize import lazyval
 from zipline.utils.numpy_utils import as_column
 from zipline.utils.preprocess import preprocess
-from zipline.utils.sqlite_utils import group_into_chunks, coerce_string_to_eng
+from zipline.utils.db_utils import group_into_chunks, coerce_string_to_eng
 
 log = Logger('assets.py')
 
@@ -618,36 +621,31 @@ class AssetFinder(object):
 
         Notes
         -----
-        This is implemented as an inner select of the columns of interest
-        ordered by the end date of the (sid, symbol) mapping. We then group
-        that inner select on the sid with no aggregations to select the last
-        row per group which gives us the most recently active symbol for all
-        of the sids.
+        We search for the values with the biggest end-date to get most recent info about symbol.
+        First, we select the max end-date and sid then we join again to get
+        information for this specific enddate and sid
         """
         cols = self.equity_symbol_mappings.c
 
         # These are the columns we actually want.
-        data_cols = (cols.sid,) + tuple(cols[name] for name in symbol_columns)
+        data_cols = [str(cols.sid)] + [str(cols[name]) for name in symbol_columns]
 
-        # Also select the max of end_date so that all non-grouped fields take
-        # on the value associated with the max end_date. The SQLite docs say
-        # this:
-        #
-        # When the min() or max() aggregate functions are used in an aggregate
-        # query, all bare columns in the result set take values from the input
-        # row which also contains the minimum or maximum. Only the built-in
-        # min() and max() functions work this way.
-        #
-        # See https://www.sqlite.org/lang_select.html#resultset, for more info.
-        to_select = data_cols + (sa.func.max(cols.end_date),)
+        # To be compatible with postgres we can't simple do a max and get all wanted fields
+        # from the same row that the maximum came from. Instead we solve this by a subquery.
+        # Sadly sqlalchemy in version < 1.4 does not support subquerys yet natively, we
+        # construct it with string-interpolation for now
 
-        return sa.select(
-            to_select,
-        ).where(
-            cols.sid.in_(map(int, sid_group))
-        ).group_by(
-            cols.sid,
-        )
+        max_cols = ','.join([str(cols.sid) + ' AS sid', 'MAX(' + str(cols.end_date) + ') AS max_date'])
+        to_select = ','.join(data_cols) + ',max_dates.max_date'
+        sids = ','.join([str(sid) for sid in sid_group])
+
+        max_date_select = f'(SELECT {max_cols} FROM {self.equity_symbol_mappings} GROUP BY {cols.sid}) AS max_dates'
+
+        query = text(f'SELECT {to_select} FROM {max_date_select} '
+                     f'JOIN {self.equity_symbol_mappings} ON {cols.sid} = max_dates.sid '
+                     f' WHERE {cols.sid} IN ({sids}) AND {cols.end_date} = max_dates.max_date')
+
+        return query
 
     def _lookup_most_recent_symbols(self, sids):
         return {
@@ -1017,6 +1015,15 @@ class AssetFinder(object):
             symbol,
             as_of_date,
         )
+
+    def get_max_sid(self):
+        table = self.equity_symbol_mappings
+        max_id = pd.read_sql(f'SELECT MAX(sid) max_id FROM {table}', self.engine)
+
+        if len(max_id) == 0 or max_id['max_id'][0] == None:
+            return -1
+
+        return max_id['max_id'][0]
 
     def lookup_symbols(self,
                        symbols,
@@ -1422,15 +1429,24 @@ class AssetFinder(object):
         """
         sids = starts = ends = []
         equities_cols = self.equities.c
+        # if country_codes:
+        #     results = sa.select((
+        #         equities_cols.sid,
+        #         equities_cols.start_date,
+        #         equities_cols.end_date,
+        #     )).where(
+        #         (self.exchanges.c.exchange == equities_cols.exchange) &
+        #         (self.exchanges.c.country_code.in_(country_codes))
+        #     ).execute().fetchall()
+        #     if results:
+        #         sids, starts, ends = zip(*results)
+        # TODO Domain bypass
         if country_codes:
             results = sa.select((
                 equities_cols.sid,
                 equities_cols.start_date,
                 equities_cols.end_date,
-            )).where(
-                (self.exchanges.c.exchange == equities_cols.exchange) &
-                (self.exchanges.c.country_code.in_(country_codes))
-            ).execute().fetchall()
+            )).execute().fetchall()
             if results:
                 sids, starts, ends = zip(*results)
 

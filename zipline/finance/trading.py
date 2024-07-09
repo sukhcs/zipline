@@ -33,10 +33,11 @@ class SimulationParameters(object):
                  capital_base=DEFAULT_CAPITAL_BASE,
                  emission_rate='daily',
                  data_frequency='daily',
-                 arena='backtest'):
+                 arena='backtest',
+                 execution_id=None):
 
-        assert type(start_session) == pd.Timestamp
-        assert type(end_session) == pd.Timestamp
+        # assert type(start_session) == pd.Timestamp
+        # assert type(end_session) == pd.Timestamp
 
         assert trading_calendar is not None, \
             "Must pass in trading calendar!"
@@ -50,9 +51,13 @@ class SimulationParameters(object):
         # chop off any minutes or hours on the given start and end dates,
         # as we only support session labels here (and we represent session
         # labels as midnight UTC).
-        self._start_session = normalize_date(start_session)
-        self._end_session = normalize_date(end_session)
+        # self._start_session = normalize_date(start_session)
+        # self._end_session = normalize_date(end_session)
+        self._start_session = start_session
+        self._end_session = end_session
         self._capital_base = capital_base
+        if execution_id:
+            self._execution_id = execution_id
 
         self._emission_rate = emission_rate
         self._data_frequency = data_frequency
@@ -66,7 +71,7 @@ class SimulationParameters(object):
             # if the start date is not a valid session in this calendar,
             # push it forward to the first valid session
             self._start_session = trading_calendar.minute_to_session_label(
-                self._start_session
+                pd.Timestamp(self._start_session)
             )
 
         if not trading_calendar.is_session(self._end_session):
@@ -74,7 +79,7 @@ class SimulationParameters(object):
             # pull it backward to the last valid session before the given
             # end date.
             self._end_session = trading_calendar.minute_to_session_label(
-                self._end_session, direction="previous"
+                pd.Timestamp(self._end_session), direction="previous"
             )
 
         self._first_open = trading_calendar.open_and_close_for_session(
