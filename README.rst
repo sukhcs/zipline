@@ -29,6 +29,8 @@ This project is meant to be used for backtesting/paper/live trading with one the
  * Interactive Brokers
  * Alpaca
 
+INCLUDES ORIGINAL QUANTOPIAN ZIPLINE + ZIPLINE TRADER
+
 
 Please `Read The Docs <https://zipline-trader.readthedocs.io/en/latest/index.html#>`_
 
